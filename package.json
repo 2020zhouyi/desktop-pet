@@ -10,7 +10,11 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "pet:wave": "node scripts/pet-state.mjs waving",
-    "pet:run": "node scripts/pet-state.mjs running",
+    "pet:jump": "node scripts/pet-state.mjs jumping",
+    "pet:run": "node scripts/pet-state.mjs running 1600",
+    "pet:wait": "node scripts/pet-state.mjs waiting",
+    "pet:review": "node scripts/pet-state.mjs review",
+    "pet:fail": "node scripts/pet-state.mjs failed",
     "pet:idle": "node scripts/pet-state.mjs idle"
   },
   "dependencies": {

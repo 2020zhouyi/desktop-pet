@@ -236,8 +236,11 @@ export default function App() {
       setStatus((current) => ({
         ...current,
         selectedPet: pet,
-        state: "idle",
+        state: "jumping",
       }));
+      void desktopPetApi.setState("jumping", 1300);
+    } else {
+      void desktopPetApi.setState("failed", 1800);
     }
     window.setTimeout(() => {
       setSwitchingPetId(null);

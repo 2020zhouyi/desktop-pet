@@ -5,6 +5,7 @@ import { mkdir, readdir, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { BehaviorController } from "./behavior-controller.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
@@ -51,7 +52,6 @@ const petDirs = [
 let mainWindow = null;
 let tray = null;
 let server = null;
-let stateResetTimer = null;
 let isPointerPassthrough = false;
 let dragSession = null;
 let inertiaSession = null;
@@ -66,6 +66,15 @@ const petState = {
   selectedPetId: null,
   pets: [],
 };
+
+const behaviorController = new BehaviorController({
+  initialState: petState.state,
+  isValidState: (state) => VALID_STATES.has(state),
+  onStateChange: (state) => {
+    petState.state = state;
+    broadcastStatus();
+  },
+});
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -227,22 +236,17 @@ async function broadcastStatus() {
 }
 
 function setPetState(nextState, durationMs) {
-  if (!VALID_STATES.has(nextState)) {
-    throw new Error(`Unsupported pet state: ${nextState}`);
-  }
+  return behaviorController.requestState(nextState, {
+    durationMs,
+    source: "state-api",
+  });
+}
 
-  if (stateResetTimer) clearTimeout(stateResetTimer);
-  petState.state = nextState;
-  broadcastStatus();
-
-  if (nextState !== "idle" && Number.isFinite(durationMs) && durationMs > 0) {
-    stateResetTimer = setTimeout(() => {
-      petState.state = "idle";
-      broadcastStatus();
-    }, Math.min(durationMs, 30_000));
-  }
-
-  return petState.state;
+function playPetAction(state, durationMs) {
+  return behaviorController.requestState(state, {
+    durationMs,
+    source: "ui-action",
+  });
 }
 
 function registerIpc() {
@@ -549,8 +553,8 @@ function showPetContextMenu() {
       },
     },
     { type: "separator" },
-    { label: "Wave", click: () => setPetState("waving", 1800) },
-    { label: "Run", click: () => setPetState("running", 1600) },
+    { label: "Wave", click: () => playPetAction("waving", 1800) },
+    { label: "Run", click: () => playPetAction("running", 1600) },
     { type: "separator" },
     {
       label: "Open pets folder",
@@ -575,7 +579,7 @@ function createTray() {
         label: "Wake",
         click: () => {
           mainWindow?.showInactive();
-          setPetState("waving", 1800);
+          playPetAction("waving", 1800);
         },
       },
       {
@@ -612,7 +616,7 @@ function startStateServer() {
       }
       if (req.method === "POST" && url.pathname === "/state") {
         const body = await readJson(req);
-        const next = setPetState(body.state, body.durationMs ?? 1800);
+        const next = setPetState(body.state, body.durationMs);
         return json(res, 200, { ok: true, state: next });
       }
       if (req.method === "POST" && url.pathname === "/pet/select") {
@@ -719,6 +723,7 @@ app.on("window-all-closed", (event) => {
 });
 
 app.on("before-quit", () => {
+  behaviorController.dispose();
   stopOverlayDrag();
   stopInertia();
   if (server) server.close();

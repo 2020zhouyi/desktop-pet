@@ -23,7 +23,11 @@ Shortcuts:
 
 ```sh
 npm run pet:wave
+npm run pet:jump
 npm run pet:run
+npm run pet:wait
+npm run pet:review
+npm run pet:fail
 npm run pet:idle
 ```
 
@@ -40,6 +44,25 @@ Interactions mirror the Codex overlay pattern:
 - Window edge constraints use the pet's visible alpha bounds, so dragging to the screen edge hugs the character rather than the transparent atlas cell.
 
 Idle animation uses the Codex timing model: the idle row frame durations are multiplied by 6. Left/right running loops continuously while dragging; other action rows play at their normal frame durations before returning to idle.
+
+## Behavior Model
+
+State changes flow through a small behavior controller in the Electron main process. It gives actions priority, applies a short cooldown to repeated one-shot actions, queues lower-priority actions when another action is already playing, and returns to `idle` when timed actions finish.
+
+The intended state semantics are:
+
+```text
+dragging          -> running-left / running-right
+click / wake      -> waving
+pet switched      -> jumping
+long work         -> waiting
+busy burst        -> running
+needs inspection  -> review
+error             -> failed
+settled           -> idle
+```
+
+Looping states such as `waiting`, `review`, and `running` can stay active until another higher/equal priority action or `idle` replaces them. Timed states such as `waving`, `jumping`, and `failed` automatically return to `idle`.
 
 For a visible debug window:
 
