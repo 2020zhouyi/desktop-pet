@@ -15,7 +15,7 @@ const transparentWindow = process.env.DESKTOP_PET_DEBUG !== "1";
 const mascotAspectRatio = 192 / 208;
 const defaultMascotWidth = 112;
 const overlayPadding = 12;
-const pickerWindowBounds = { width: 430, height: 520 };
+const pickerWindowBounds = { width: 660, height: 430 };
 const windowBounds = transparentWindow
   ? overlayBoundsForMascot(defaultMascotWidth)
   : { width: 520, height: 620 };

@@ -15,6 +15,7 @@ const dragThresholdPx = 4;
 const minMascotWidthPx = 80;
 const maxMascotWidthPx = 224;
 const defaultMascotWidthPx = 112;
+const mascotAspectRatio = 192 / 208;
 
 type DragState = {
   pointerId: number;
@@ -206,6 +207,13 @@ export default function App() {
     if (!image) return;
     updateVisualInsets(image);
   }, [mascotWidth]);
+
+  useEffect(() => {
+    if (isPickerOpen) return;
+    const image = hitImageRef.current;
+    if (!image) return;
+    updateVisualInsets(image);
+  }, [isPickerOpen]);
 
   const sourceLabel = useMemo(() => {
     if (!selected) return "No pet";
@@ -478,7 +486,12 @@ export default function App() {
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={(event) => finishDrag(event, true)}
-        style={{ "--mascot-width": `${mascotWidth}px` } as CSSProperties}
+        style={
+          {
+            "--mascot-width": `${mascotWidth}px`,
+            "--mascot-height": `${mascotWidth / mascotAspectRatio}px`,
+          } as CSSProperties
+        }
       >
         <div
           className="pet-hit-area"
@@ -603,70 +616,91 @@ function PetPicker({
   onClose: () => void;
   onSelect: (id: string) => void;
 }) {
-  const [query, setQuery] = useState("");
-  const normalizedQuery = query.trim().toLowerCase();
-  const filteredPets = normalizedQuery
-    ? pets.filter((pet) =>
-        `${pet.displayName} ${pet.description ?? ""} ${pet.source}`
-          .toLowerCase()
-          .includes(normalizedQuery),
-      )
-    : pets;
+  const pageSize = 5;
+  const [pageIndex, setPageIndex] = useState(0);
+  const pageCount = Math.max(1, Math.ceil(pets.length / pageSize));
+  const visiblePets = pets.slice(pageIndex * pageSize, pageIndex * pageSize + pageSize);
+  const canGoBack = pageIndex > 0;
+  const canGoForward = pageIndex < pageCount - 1;
+
+  useEffect(() => {
+    const selectedIndex = pets.findIndex((pet) => pet.id === selected?.id);
+    if (selectedIndex >= 0) {
+      setPageIndex(Math.floor(selectedIndex / pageSize));
+    }
+  }, [pets.length, selected?.id]);
+
+  const goBack = () => setPageIndex((current) => Math.max(0, current - 1));
+  const goForward = () => setPageIndex((current) => Math.min(pageCount - 1, current + 1));
 
   return (
     <aside className="picker no-drag" aria-label="Choose pet">
       <header className="picker-header">
         <div>
-          <strong>Pet Library</strong>
-          <span>{pets.length} models ready</span>
+          <strong>Choose Pet</strong>
+          <span>
+            {pageIndex + 1}/{pageCount} · {pets.length} models
+          </span>
         </div>
         <button className="icon-button" type="button" aria-label="Close picker" onClick={onClose}>
           ×
         </button>
       </header>
 
-      <label className="pet-search">
-        <span>Search pets</span>
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Name or source"
-          autoFocus
-        />
-      </label>
+      <div className="pet-carousel">
+        <button
+          className="carousel-button"
+          type="button"
+          aria-label="Previous pet page"
+          disabled={!canGoBack}
+          onClick={goBack}
+        >
+          &lt;
+        </button>
 
-      <div className="pet-grid">
-        {filteredPets.map((pet) => {
-          const isSelected = pet.id === selected?.id;
-          const isSwitching = pet.id === switchingPetId;
-          const previewUrl = previews[pet.id];
-          return (
-            <button
-              key={`${pet.source}:${pet.id}`}
-              type="button"
-              className={`pet-card ${isSelected ? "active" : ""} ${isSwitching ? "is-switching" : ""}`}
-              onClick={() => onSelect(pet.id)}
-            >
-              <span className="pet-card-preview" aria-hidden="true">
-                {previewUrl ? (
-                  <span
-                    className="pet-card-sprite"
-                    style={{ backgroundImage: `url("${previewUrl}")` }}
-                  />
-                ) : (
-                  <span className="pet-card-initials">{initialsFor(pet.displayName)}</span>
-                )}
-              </span>
-              <span className="pet-card-copy">
-                <span className="pet-card-name">{pet.displayName}</span>
-                <span className="pet-card-source">{sourceName(pet.source)}</span>
-              </span>
-            </button>
-          );
-        })}
+        <div className="pet-row">
+          {visiblePets.map((pet) => {
+            const isSelected = pet.id === selected?.id;
+            const isSwitching = pet.id === switchingPetId;
+            const previewUrl = previews[pet.id];
+            return (
+              <button
+                key={`${pet.source}:${pet.id}`}
+                type="button"
+                className={`pet-card ${isSelected ? "active" : ""} ${isSwitching ? "is-switching" : ""}`}
+                onClick={() => onSelect(pet.id)}
+              >
+                <span className="pet-card-preview" aria-hidden="true">
+                  {previewUrl ? (
+                    <span
+                      className="pet-card-sprite"
+                      style={{ backgroundImage: `url("${previewUrl}")` }}
+                    />
+                  ) : (
+                    <span className="pet-card-initials">{initialsFor(pet.displayName)}</span>
+                  )}
+                </span>
+                <span className="pet-card-copy">
+                  <span className="pet-card-name">{pet.displayName}</span>
+                  <span className="pet-card-source">{sourceName(pet.source)}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          className="carousel-button"
+          type="button"
+          aria-label="Next pet page"
+          disabled={!canGoForward}
+          onClick={goForward}
+        >
+          &gt;
+        </button>
       </div>
 
-      {filteredPets.length === 0 ? <p className="empty-picker">No pets found.</p> : null}
+      {pets.length === 0 ? <p className="empty-picker">No pets found.</p> : null}
     </aside>
   );
 }
