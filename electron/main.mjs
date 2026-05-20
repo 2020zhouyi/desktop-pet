@@ -15,6 +15,8 @@ const transparentWindow = process.env.DESKTOP_PET_DEBUG !== "1";
 const mascotAspectRatio = 192 / 208;
 const defaultMascotWidth = 112;
 const overlayPadding = 12;
+const speechBubbleMinWidth = 260;
+const speechBubbleHeadroom = 96;
 const pickerWindowBounds = { width: 660, height: 430 };
 const windowBounds = transparentWindow
   ? overlayBoundsForMascot(defaultMascotWidth)
@@ -294,8 +296,8 @@ function registerIpc() {
 
 function overlayBoundsForMascot(widthPx) {
   return {
-    width: Math.ceil(widthPx + overlayPadding * 2),
-    height: Math.ceil(widthPx / mascotAspectRatio + overlayPadding * 2),
+    width: Math.ceil(Math.max(widthPx + overlayPadding * 2, speechBubbleMinWidth)),
+    height: Math.ceil(widthPx / mascotAspectRatio + overlayPadding * 2 + speechBubbleHeadroom),
   };
 }
 
