@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, shell, Tray } from "electron";
 import http from "node:http";
 import { existsSync } from "node:fs";
-import { mkdir, readdir, readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { BehaviorController } from "./behavior-controller.mjs";
@@ -138,7 +138,6 @@ function createWindow() {
 async function loadPets() {
   const pets = [];
   for (const entry of petDirs) {
-    await mkdir(entry.dir, { recursive: true });
     const folders = await readdir(entry.dir, { withFileTypes: true }).catch(() => []);
     for (const folder of folders) {
       if (!folder.isDirectory() || folder.name.startsWith(".")) continue;
@@ -727,7 +726,9 @@ async function petPreviewUrl(pet) {
 
 app.whenReady().then(async () => {
   registerIpc();
-  await loadPets();
+  await loadPets().catch((error) => {
+    console.error("Failed to load bundled pets:", error);
+  });
   createWindow();
   createTray();
   startStateServer();
