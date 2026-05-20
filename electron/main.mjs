@@ -47,6 +47,7 @@ const VALID_STATES = new Set([
 const petDirs = [
   { source: "project", dir: path.join(projectRoot, "pets") },
 ];
+const preferredDefaultPetFolder = "jx3-u4e03-u79c0-01";
 
 let mainWindow = null;
 let tray = null;
@@ -105,8 +106,8 @@ function createWindow() {
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   mainWindow.setMenuBarVisibility(false);
   if (transparentWindow) {
-    const cursorPoint = screenPointNearCursor();
-    if (cursorPoint) mainWindow.setPosition(cursorPoint.x, cursorPoint.y, false);
+    const wakeBounds = centeredOverlayBounds(windowBounds);
+    if (wakeBounds) mainWindow.setBounds(wakeBounds, false);
   } else {
     mainWindow.center();
   }
@@ -125,6 +126,7 @@ function createWindow() {
     }
     mainWindow?.moveTop();
     setPointerPassthrough(transparentWindow);
+    revealPetWindow({ center: transparentWindow, action: false });
     broadcastStatus();
   });
 
@@ -163,27 +165,48 @@ async function loadPets() {
     }
   }
 
-  petState.pets = pets;
-  if (!petState.selectedPetId || !pets.some((pet) => pet.id === petState.selectedPetId)) {
-    petState.selectedPetId = pets[0]?.id ?? null;
+  petState.pets = sortPetsForMvp(pets);
+  if (!petState.selectedPetId || !petState.pets.some((pet) => pet.id === petState.selectedPetId)) {
+    petState.selectedPetId = defaultPetId(petState.pets);
   }
   broadcastStatus();
-  return pets;
+  return petState.pets;
 }
 
-function screenPointNearCursor() {
+function sortPetsForMvp(pets) {
+  return [...pets].sort((left, right) => {
+    const scoreDelta = petSortScore(left) - petSortScore(right);
+    if (scoreDelta !== 0) return scoreDelta;
+    return left.displayName.localeCompare(right.displayName, "zh-Hans-CN");
+  });
+}
+
+function petSortScore(pet) {
+  const folderName = path.basename(pet.folder);
+  if (folderName === preferredDefaultPetFolder) return 0;
+  if (folderName.startsWith("jx3-")) return 1;
+  if (folderName === "codexish") return 3;
+  return 2;
+}
+
+function defaultPetId(pets) {
+  return (
+    pets.find((pet) => path.basename(pet.folder) === preferredDefaultPetFolder)?.id ??
+    pets.find((pet) => path.basename(pet.folder).startsWith("jx3-"))?.id ??
+    pets[0]?.id ??
+    null
+  );
+}
+
+function centeredOverlayBounds(bounds = mainWindow?.getBounds() ?? windowBounds) {
   try {
     const cursor = screen.getCursorScreenPoint();
     const display = screen.getDisplayNearestPoint(cursor);
-    const x = Math.min(
-      Math.max(cursor.x - Math.round(windowBounds.width / 2), display.workArea.x),
-      display.workArea.x + display.workArea.width - windowBounds.width,
-    );
-    const y = Math.min(
-      Math.max(cursor.y - Math.round(windowBounds.height / 2), display.workArea.y),
-      display.workArea.y + display.workArea.height - windowBounds.height,
-    );
-    return { x, y };
+    return clampBoundsToDisplay({
+      ...bounds,
+      x: Math.round(display.workArea.x + (display.workArea.width - bounds.width) / 2),
+      y: Math.round(display.workArea.y + display.workArea.height * 0.58 - bounds.height / 2),
+    });
   } catch {
     return null;
   }
@@ -592,8 +615,7 @@ function createTray() {
       {
         label: "Wake",
         click: () => {
-          mainWindow?.showInactive();
-          playPetAction("waving", 1800);
+          revealPetWindow({ center: true });
         },
       },
       {
@@ -620,6 +642,12 @@ function startStateServer() {
       }
       if (req.method === "GET" && url.pathname === "/pets") {
         return json(res, 200, { pets: petState.pets.map(publicPet) });
+      }
+      if (req.method === "GET" && url.pathname === "/window") {
+        return json(res, 200, windowStatus());
+      }
+      if (req.method === "POST" && url.pathname === "/wake") {
+        return json(res, 200, { ok: true, window: revealPetWindow({ center: true }) });
       }
       if (req.method === "GET" && url.pathname === "/pet/preview") {
         const pet = petState.pets.find((candidate) => candidate.id === url.searchParams.get("id"));
@@ -696,6 +724,48 @@ function publicStatus() {
     state: petState.state,
     pets: petState.pets.map(publicPet),
   };
+}
+
+function windowStatus() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return { exists: false };
+  }
+  return {
+    exists: true,
+    visible: mainWindow.isVisible(),
+    focused: mainWindow.isFocused(),
+    bounds: mainWindow.getBounds(),
+    alwaysOnTop: mainWindow.isAlwaysOnTop(),
+    pointerPassthrough: isPointerPassthrough,
+    pickerOpen: isPickerOpen,
+    transparent: transparentWindow,
+  };
+}
+
+function revealPetWindow(options = {}) {
+  if (!mainWindow || mainWindow.isDestroyed()) return windowStatus();
+
+  stopOverlayDrag();
+  stopInertia();
+  mainWindow.setAlwaysOnTop(true, "floating");
+  mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+
+  if (options.center) {
+    const nextBounds = centeredOverlayBounds(mainWindow.getBounds());
+    if (nextBounds) mainWindow.setBounds(nextBounds, false);
+  }
+
+  if (transparentWindow) mainWindow.showInactive();
+  else {
+    mainWindow.show();
+    mainWindow.focus();
+  }
+
+  mainWindow.moveTop();
+  setPointerPassthrough(transparentWindow && !isPickerOpen);
+  if (options.action !== false) playPetAction("waving", 1800);
+  broadcastStatus();
+  return windowStatus();
 }
 
 function publicPet(pet) {
