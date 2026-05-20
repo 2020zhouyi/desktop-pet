@@ -2,12 +2,12 @@ import type { DesktopPetApi, PetState, PetStatus } from "./types";
 
 const serverBase = "http://127.0.0.1:7777";
 const fallbackPet = {
-  id: "sample:codexish",
+  id: "project:codexish",
   displayName: "Codexish",
   description: "A simple local sample pet for the MVP renderer.",
   spritesheetPath: "spritesheet.svg",
   folder: "public/pets/codexish",
-  source: "sample",
+  source: "project",
   spritesheetUrl: "/pets/codexish/spritesheet.svg",
 } as const;
 

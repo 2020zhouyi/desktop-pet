@@ -19,7 +19,7 @@ export type PetManifest = {
 export type PetOption = PetManifest & {
   folder: string;
   spritesheetUrl?: string;
-  source: "app" | "codex" | "sample";
+  source: "app" | "codex" | "project" | "sample";
 };
 
 export type PetStatus = {

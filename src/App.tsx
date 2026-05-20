@@ -324,6 +324,7 @@ export default function App() {
 
   const sourceLabel = useMemo(() => {
     if (!selected) return "No pet";
+    if (selected.source === "project") return "Project pets";
     if (selected.source === "codex") return "Codex folder";
     if (selected.source === "sample") return "Sample";
     return "App folder";

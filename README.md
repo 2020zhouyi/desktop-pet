@@ -80,7 +80,7 @@ src/
   App.tsx        桌宠渲染、拖拽/缩放/切换器交互、alpha 命中检测
   petAnimation.ts Codex-compatible atlas 动画时序
   styles.css     透明覆盖层、角色、切换器 UI
-sample-pets/     示例宠物包
+pets/            项目内置宠物包，运行时只从这里加载
 scripts/         本地状态控制脚本
 docs/            设计记录和工作日志
 ```
@@ -96,12 +96,10 @@ git status --short
 
 ## Pet Folders
 
-The app scans these folders:
+The app scans the project-local pet folder:
 
 ```text
-~/.desktop-pet-mvp/pets/
-~/.codex/pets/
-./sample-pets/
+./pets/
 ```
 
 Each pet is:

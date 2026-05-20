@@ -32,7 +32,7 @@
 - 实现主进程窗口拖拽和松手惯性移动。
 - 实现 alpha 像素命中检测：透明区域点击穿透，角色可见区域才响应。
 - 根据所有动画帧 alpha 边界计算可视 insets，让角色拖到屏幕边缘时更贴近可见轮廓。
-- 扫描 `sample-pets/`、`~/.desktop-pet-mvp/pets/`、`~/.codex/pets/` 三类宠物目录。
+- 宠物资源已迁移到项目内 `pets/`，运行时只扫描本地项目资源。
 - 实现宠物切换器：右键 `Choose pet...` 打开，带缩略图、搜索、选中态和切换动效。
 - 打开切换器时临时扩大透明窗口，关闭后收回到桌宠尺寸。
 - 增加本地状态 API 和脚本：`npm run pet:wave`、`npm run pet:run`、`npm run pet:idle`。

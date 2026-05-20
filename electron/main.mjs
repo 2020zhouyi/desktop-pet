@@ -2,7 +2,6 @@ import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, shell, Tray } f
 import http from "node:http";
 import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile } from "node:fs/promises";
-import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { BehaviorController } from "./behavior-controller.mjs";
@@ -46,9 +45,7 @@ const VALID_STATES = new Set([
 ]);
 
 const petDirs = [
-  { source: "sample", dir: path.join(projectRoot, "sample-pets") },
-  { source: "app", dir: path.join(homedir(), ".desktop-pet-mvp", "pets") },
-  { source: "codex", dir: path.join(homedir(), ".codex", "pets") },
+  { source: "project", dir: path.join(projectRoot, "pets") },
 ];
 
 let mainWindow = null;
@@ -576,7 +573,7 @@ function showPetContextMenu() {
     { type: "separator" },
     {
       label: "Open pets folder",
-      click: () => shell.openPath(path.join(homedir(), ".desktop-pet-mvp", "pets")),
+      click: () => shell.openPath(path.join(projectRoot, "pets")),
     },
     { type: "separator" },
     { label: "Quit", click: () => app.quit() },
@@ -602,7 +599,7 @@ function createTray() {
       },
       {
         label: "Open pets folder",
-        click: () => shell.openPath(path.join(homedir(), ".desktop-pet-mvp", "pets")),
+        click: () => shell.openPath(path.join(projectRoot, "pets")),
       },
       { type: "separator" },
       { label: "Quit", click: () => app.quit() },
