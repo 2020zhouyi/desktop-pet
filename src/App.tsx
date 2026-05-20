@@ -619,6 +619,7 @@ function PetPicker({
   const pageSize = 5;
   const [pageIndex, setPageIndex] = useState(0);
   const [pageDirection, setPageDirection] = useState<"next" | "previous">("next");
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const pageCount = Math.max(1, Math.ceil(pets.length / pageSize));
   const visiblePets = pets.slice(pageIndex * pageSize, pageIndex * pageSize + pageSize);
   const canGoBack = pageIndex > 0;
@@ -659,7 +660,13 @@ function PetPicker({
           &lt;
         </button>
 
-        <div className="pet-row" key={pageIndex} data-direction={pageDirection}>
+        <div
+          className="pet-row"
+          key={pageIndex}
+          data-direction={pageDirection}
+          data-hover-index={hoveredIndex ?? undefined}
+          onPointerLeave={() => setHoveredIndex(null)}
+        >
           {visiblePets.map((pet, index) => {
             const isSelected = pet.id === selected?.id;
             const isSwitching = pet.id === switchingPetId;
@@ -669,7 +676,7 @@ function PetPicker({
               <button
                 key={`${pet.source}:${pet.id}`}
                 type="button"
-                className={`pet-card ${isSelected ? "active" : ""} ${isSwitching ? "is-switching" : ""}`}
+                className={`pet-card ${isSelected ? "active" : ""} ${isSwitching ? "is-switching" : ""} ${hoveredIndex === index ? "is-hovered" : ""}`}
                 style={
                   {
                     "--arc-y": `${arcOffset(index, visiblePets.length)}px`,
@@ -677,6 +684,9 @@ function PetPicker({
                   } as CSSProperties
                 }
                 title={pet.displayName}
+                onPointerEnter={() => setHoveredIndex(index)}
+                onFocus={() => setHoveredIndex(index)}
+                onBlur={() => setHoveredIndex(null)}
                 onClick={() => onSelect(pet.id)}
               >
                 <span className="pet-card-preview" aria-hidden="true">

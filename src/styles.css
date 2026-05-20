@@ -337,8 +337,35 @@ button {
   gap: 7px;
   min-width: 0;
   overflow: visible;
+  transition:
+    gap 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    grid-template-columns 260ms cubic-bezier(0.16, 1, 0.3, 1);
   animation: row-slide-in 300ms cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
+}
+
+.pet-row[data-hover-index] {
+  gap: 5px;
+}
+
+.pet-row[data-hover-index="0"] {
+  grid-template-columns: 1.62fr 0.9fr 0.84fr 0.82fr 0.82fr;
+}
+
+.pet-row[data-hover-index="1"] {
+  grid-template-columns: 0.82fr 1.62fr 0.9fr 0.84fr 0.82fr;
+}
+
+.pet-row[data-hover-index="2"] {
+  grid-template-columns: 0.82fr 0.9fr 1.62fr 0.9fr 0.82fr;
+}
+
+.pet-row[data-hover-index="3"] {
+  grid-template-columns: 0.82fr 0.84fr 0.9fr 1.62fr 0.82fr;
+}
+
+.pet-row[data-hover-index="4"] {
+  grid-template-columns: 0.82fr 0.82fr 0.84fr 0.9fr 1.62fr;
 }
 
 .pet-row[data-direction="previous"] {
@@ -374,15 +401,16 @@ button {
     transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
   transform: translateY(calc(var(--arc-y) + var(--card-lift))) scale(var(--card-scale));
   transform-origin: 50% 88%;
-  animation: card-pop 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: card-pop 420ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
   animation-delay: calc(var(--card-index) * 22ms);
   backface-visibility: hidden;
   will-change: opacity, transform;
 }
 
-.pet-card:hover {
-  --card-lift: -4px;
-  --card-scale: 1.08;
+.pet-card:hover,
+.pet-card.is-hovered {
+  --card-lift: -7px;
+  --card-scale: 1.16;
 
   z-index: 4;
   border-color: rgb(33 125 116 / 26%);
@@ -403,6 +431,12 @@ button {
   box-shadow:
     0 8px 18px rgb(33 125 116 / 16%),
     0 0 0 3px rgb(33 125 116 / 12%);
+}
+
+.pet-card.active:hover,
+.pet-card.active.is-hovered {
+  --card-lift: -7px;
+  --card-scale: 1.16;
 }
 
 .pet-card.is-switching {
@@ -503,12 +537,10 @@ button {
 @keyframes card-pop {
   from {
     opacity: 0;
-    transform: translateY(calc(var(--arc-y) + 8px)) scale(0.9);
   }
 
   to {
     opacity: 1;
-    transform: translateY(calc(var(--arc-y) + var(--card-lift))) scale(var(--card-scale));
   }
 }
 
