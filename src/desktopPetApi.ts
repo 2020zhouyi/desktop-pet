@@ -1,20 +1,10 @@
 import type { DesktopPetApi, PetState, PetStatus } from "./types";
 
 const serverBase = "http://127.0.0.1:7777";
-const fallbackPet = {
-  id: "project:codexish",
-  displayName: "Codexish",
-  description: "A simple local sample pet for the MVP renderer.",
-  spritesheetPath: "spritesheet.svg",
-  folder: "public/pets/codexish",
-  source: "project",
-  spritesheetUrl: "/pets/codexish/spritesheet.svg",
-} as const;
-
 export const localPreviewStatus: PetStatus = {
-  selectedPet: fallbackPet,
+  selectedPet: null,
   state: "idle",
-  pets: [fallbackPet],
+  pets: [],
 };
 
 let fallbackStatus: PetStatus = localPreviewStatus;
@@ -80,18 +70,18 @@ const browserApi: DesktopPetApi = {
     }
   },
   async getPetPreview(id) {
-    if (!hasHttpTransport()) return id === fallbackPet.id ? fallbackPet.spritesheetUrl : null;
+    if (!hasHttpTransport()) return null;
     try {
       const body = await requestJson<{ previewUrl: string | null }>(
         `/pet/preview?id=${encodeURIComponent(id)}`,
       );
       return body.previewUrl;
     } catch {
-      return id === fallbackPet.id ? fallbackPet.spritesheetUrl : null;
+      return null;
     }
   },
   async selectPet(id) {
-    if (!hasHttpTransport()) return id === fallbackPet.id ? fallbackPet : null;
+    if (!hasHttpTransport()) return null;
     try {
       const body = await requestJson<{ pet: PetStatus["selectedPet"] }>("/pet/select?assets=1", {
         method: "POST",
@@ -99,7 +89,7 @@ const browserApi: DesktopPetApi = {
       });
       return body.pet;
     } catch {
-      return id === fallbackPet.id ? fallbackPet : null;
+      return null;
     }
   },
   async setState(state: PetState, durationMs = 1800) {

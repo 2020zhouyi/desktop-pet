@@ -185,7 +185,6 @@ function petSortScore(pet) {
   const folderName = path.basename(pet.folder);
   if (folderName === preferredDefaultPetFolder) return 0;
   if (folderName.startsWith("jx3-")) return 1;
-  if (folderName === "codexish") return 3;
   return 2;
 }
 
