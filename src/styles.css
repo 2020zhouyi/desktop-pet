@@ -342,38 +342,38 @@ button {
 }
 
 .pet-row[data-hover-index="0"] {
-  --card-2-shift: 18px;
-  --card-3-shift: 12px;
-  --card-4-shift: 8px;
+  --card-2-shift: 28px;
+  --card-3-shift: 18px;
+  --card-4-shift: 11px;
   --card-5-shift: 6px;
 }
 
 .pet-row[data-hover-index="1"] {
-  --card-1-shift: -14px;
-  --card-3-shift: 18px;
-  --card-4-shift: 12px;
-  --card-5-shift: 8px;
-}
-
-.pet-row[data-hover-index="2"] {
-  --card-1-shift: -10px;
-  --card-2-shift: -18px;
+  --card-1-shift: -22px;
+  --card-3-shift: 28px;
   --card-4-shift: 18px;
   --card-5-shift: 10px;
 }
 
-.pet-row[data-hover-index="3"] {
-  --card-1-shift: -8px;
-  --card-2-shift: -12px;
-  --card-3-shift: -18px;
+.pet-row[data-hover-index="2"] {
+  --card-1-shift: -14px;
+  --card-2-shift: -28px;
+  --card-4-shift: 28px;
   --card-5-shift: 14px;
+}
+
+.pet-row[data-hover-index="3"] {
+  --card-1-shift: -10px;
+  --card-2-shift: -18px;
+  --card-3-shift: -28px;
+  --card-5-shift: 22px;
 }
 
 .pet-row[data-hover-index="4"] {
   --card-1-shift: -6px;
-  --card-2-shift: -8px;
-  --card-3-shift: -12px;
-  --card-4-shift: -18px;
+  --card-2-shift: -11px;
+  --card-3-shift: -18px;
+  --card-4-shift: -28px;
 }
 
 .pet-row[data-direction="previous"] {
@@ -421,8 +421,8 @@ button {
 
 .pet-card:hover,
 .pet-card.is-hovered {
-  --card-lift: -9px;
-  --card-scale: 1.22;
+  --card-lift: -13px;
+  --card-scale: 1.33;
 
   z-index: 4;
   border-color: rgb(33 125 116 / 26%);
@@ -447,8 +447,8 @@ button {
 
 .pet-card.active:hover,
 .pet-card.active.is-hovered {
-  --card-lift: -9px;
-  --card-scale: 1.22;
+  --card-lift: -13px;
+  --card-scale: 1.33;
 }
 
 .pet-card:nth-child(1) {
