@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { desktopPetApi, localPreviewStatus } from "./desktopPetApi";
+import { bubbleTextForPet } from "./petBubbles";
 import { atlas, backgroundPosition, sequenceFor } from "./petAnimation";
 import type { PetOption, PetState, PetStatus } from "./types";
+import type { BubbleScene } from "./petBubbles";
 import type {
   CSSProperties,
   MouseEvent as ReactMouseEvent,
@@ -16,6 +18,14 @@ const minMascotWidthPx = 80;
 const maxMascotWidthPx = 224;
 const defaultMascotWidthPx = 112;
 const mascotAspectRatio = 192 / 208;
+const bubbleDurationMs = 3200;
+const idleBubbleDelayMs = 6 * 60 * 1000;
+const bubbleCooldownMs: Record<BubbleScene, number> = {
+  welcome: 60 * 1000,
+  idle: 4 * 60 * 1000,
+  click: 25 * 1000,
+  drag: 30 * 1000,
+};
 
 type DragState = {
   pointerId: number;
@@ -40,6 +50,12 @@ type AlphaBounds = {
   minY: number;
   maxX: number;
   maxY: number;
+};
+
+type ActiveBubble = {
+  id: number;
+  scene: BubbleScene;
+  text: string;
 };
 
 function useReducedMotion(): boolean {
@@ -119,10 +135,16 @@ export default function App() {
   const [mascotWidth, setMascotWidth] = useState(defaultMascotWidthPx);
   const [petPreviews, setPetPreviews] = useState<Record<string, string | null>>({});
   const [switchingPetId, setSwitchingPetId] = useState<string | null>(null);
+  const [currentBubble, setCurrentBubble] = useState<ActiveBubble | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const resizeRef = useRef<ResizeState | null>(null);
   const pendingResizeRef = useRef<number | null>(null);
   const resizeFrameRef = useRef<number | null>(null);
+  const bubbleTimerRef = useRef<number | null>(null);
+  const bubbleIdRef = useRef(0);
+  const idleTimerRef = useRef<number | null>(null);
+  const lastBubbleAtRef = useRef<Partial<Record<BubbleScene, number>>>({});
+  const lastSelectedPetIdRef = useRef<string | null>(null);
   const currentFrameRef = useRef<Frame>({ row: 0, column: 0, durationMs: 280 });
   const hitImageRef = useRef<HTMLImageElement | null>(null);
   const hitCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -138,6 +160,66 @@ export default function App() {
     void desktopPetApi.setPointerPassthrough(enabled);
   };
 
+  const clearBubbleTimer = () => {
+    if (bubbleTimerRef.current === null) return;
+    window.clearTimeout(bubbleTimerRef.current);
+    bubbleTimerRef.current = null;
+  };
+
+  const clearIdleTimer = () => {
+    if (idleTimerRef.current === null) return;
+    window.clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = null;
+  };
+
+  const showBubble = useCallback(
+    (scene: BubbleScene, options: { force?: boolean } = {}) => {
+      if (isPickerOpen) return false;
+
+      const now = Date.now();
+      const cooldownMs = options.force ? 0 : bubbleCooldownMs[scene];
+      const lastAt = lastBubbleAtRef.current[scene] ?? 0;
+      if (now - lastAt < cooldownMs) return false;
+
+      const id = bubbleIdRef.current + 1;
+      bubbleIdRef.current = id;
+      lastBubbleAtRef.current = {
+        ...lastBubbleAtRef.current,
+        [scene]: now,
+      };
+      clearBubbleTimer();
+      setCurrentBubble({
+        id,
+        scene,
+        text: bubbleTextForPet(selected, scene),
+      });
+      bubbleTimerRef.current = window.setTimeout(() => {
+        bubbleTimerRef.current = null;
+        setCurrentBubble((bubble) => bubble?.id === id ? null : bubble);
+      }, bubbleDurationMs);
+      return true;
+    },
+    [isPickerOpen, selected],
+  );
+
+  const scheduleIdleBubble = useCallback(() => {
+    clearIdleTimer();
+    if (isPickerOpen || dragRef.current || resizeRef.current) return;
+
+    idleTimerRef.current = window.setTimeout(() => {
+      idleTimerRef.current = null;
+      if (isPickerOpen || dragRef.current || resizeRef.current) return;
+      if (showBubble("idle")) {
+        void desktopPetApi.setState("waiting", 1800);
+      }
+      scheduleIdleBubble();
+    }, idleBubbleDelayMs);
+  }, [isPickerOpen, showBubble]);
+
+  const resetIdleBubbleTimer = useCallback(() => {
+    scheduleIdleBubble();
+  }, [scheduleIdleBubble]);
+
   useEffect(() => {
     void desktopPetApi.getStatus().then(setStatus);
     return desktopPetApi.onStatusChanged(setStatus);
@@ -148,7 +230,25 @@ export default function App() {
   useEffect(() => {
     void desktopPetApi.setPickerOpen(isPickerOpen);
     if (isPickerOpen) setPointerPassthrough(false);
+    if (isPickerOpen) {
+      clearIdleTimer();
+      clearBubbleTimer();
+      setCurrentBubble(null);
+    } else {
+      scheduleIdleBubble();
+    }
   }, [isPickerOpen]);
+
+  useEffect(() => {
+    if (!selected?.id || isPickerOpen) return;
+    if (lastSelectedPetIdRef.current === selected.id) return;
+    lastSelectedPetIdRef.current = selected.id;
+
+    const timer = window.setTimeout(() => {
+      void showBubble("welcome", { force: true });
+    }, 260);
+    return () => window.clearTimeout(timer);
+  }, [isPickerOpen, selected?.id, showBubble]);
 
   useEffect(() => {
     if (!isPickerOpen) return;
@@ -183,9 +283,16 @@ export default function App() {
   useEffect(() => {
     void setPointerPassthrough(true);
     return () => {
+      clearIdleTimer();
+      clearBubbleTimer();
       void desktopPetApi.setPointerPassthrough(false);
     };
   }, []);
+
+  useEffect(() => {
+    scheduleIdleBubble();
+    return clearIdleTimer;
+  }, [scheduleIdleBubble]);
 
   useEffect(() => {
     hitFrameDataRef.current = { key: "", pixels: null };
@@ -247,6 +354,7 @@ export default function App() {
         state: "jumping",
       }));
       void desktopPetApi.setState("jumping", 1300);
+      lastSelectedPetIdRef.current = null;
     } else {
       void desktopPetApi.setState("failed", 1800);
     }
@@ -269,6 +377,7 @@ export default function App() {
   };
 
   const onPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    resetIdleBubbleTimer();
     if (event.button !== 0 || !(event.target instanceof Element)) return;
     if (event.target.closest(".no-drag")) return;
     if (!isMascotHit(event.clientX, event.clientY)) {
@@ -301,6 +410,7 @@ export default function App() {
     const deltaY = event.screenY - drag.screenY;
     if (Math.abs(deltaX) < dragThresholdPx && Math.abs(deltaY) < dragThresholdPx) return;
 
+    if (!drag.hasMoved) void showBubble("drag");
     drag.hasMoved = true;
     drag.screenX = event.screenX;
     drag.screenY = event.screenY;
@@ -317,13 +427,18 @@ export default function App() {
     setDragging(false);
 
     if (!drag.hasMoved && shouldWave) {
+      void showBubble("click");
       void desktopPetApi.setState("waving", 1600);
+      resetIdleBubbleTimer();
       return;
     }
+    void showBubble("drag");
     void desktopPetApi.setState("idle");
+    resetIdleBubbleTimer();
   };
 
   const onResizePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    resetIdleBubbleTimer();
     if (event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
@@ -363,6 +478,7 @@ export default function App() {
   };
 
   const onMouseMove = (event: ReactMouseEvent<HTMLElement>) => {
+    resetIdleBubbleTimer();
     if (isPickerOpen) {
       setPointerPassthrough(false);
       return;
@@ -493,6 +609,17 @@ export default function App() {
           } as CSSProperties
         }
       >
+        {currentBubble && !isPickerOpen ? (
+          <div
+            key={currentBubble.id}
+            className="speech-bubble"
+            data-scene={currentBubble.scene}
+            aria-live="polite"
+          >
+            {currentBubble.text}
+          </div>
+        ) : null}
+
         <div
           className="pet-hit-area"
           data-avatar-overlay-hit-region="mascot"
