@@ -45,8 +45,8 @@ button {
 }
 
 .pet-shell.is-picker-open {
-  padding: 16px 20px 18px;
-  place-items: end center;
+  padding: 0;
+  place-items: center;
 }
 
 .no-drag,
@@ -78,17 +78,8 @@ button {
   transition: transform 160ms ease;
 }
 
-.is-picker-open .pet-hit-area {
-  position: absolute;
-  top: auto;
-  bottom: 18px;
-  left: 50%;
-  z-index: 2;
-  transform: translateX(-50%);
-}
-
 .is-picker-open.is-dragging .pet-hit-area {
-  transform: translateX(-50%) scale(0.95);
+  transform: scale(0.95);
 }
 
 .pet {
@@ -238,40 +229,20 @@ button {
 .picker {
   position: absolute;
   right: max(24px, calc((100% - 594px) / 2));
-  bottom: calc(var(--mascot-height, 121px) + 50px);
+  bottom: calc(50% + var(--mascot-height, 121px) / 2 + 24px);
   left: max(24px, calc((100% - 594px) / 2));
   z-index: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 8px;
-  height: 154px;
-  padding: 14px 16px 16px;
-  border: 1px solid rgb(28 33 35 / 12%);
-  border-radius: 18px 18px 30px 30px;
-  background:
-    radial-gradient(120% 70% at 50% 116%, rgb(33 125 116 / 12%), transparent 58%),
-    linear-gradient(180deg, rgb(255 255 255 / 94%), rgb(246 249 248 / 90%)),
-    rgb(255 255 255 / 88%);
-  box-shadow:
-    0 18px 34px rgb(0 0 0 / 14%),
-    inset 0 1px 0 rgb(255 255 255 / 72%);
-  backdrop-filter: blur(18px) saturate(1.15);
+  height: 132px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
   transform-origin: 50% 100%;
-  animation: picker-enter 240ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.picker::after {
-  position: absolute;
-  left: 50%;
-  bottom: -8px;
-  width: 16px;
-  height: 16px;
-  border-right: 1px solid rgb(28 33 35 / 10%);
-  border-bottom: 1px solid rgb(28 33 35 / 10%);
-  background: rgb(246 249 248 / 90%);
-  content: "";
-  transform: translateX(-50%) rotate(45deg);
+  animation: picker-enter 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .picker-header {
@@ -314,6 +285,7 @@ button {
   gap: 10px;
   min-height: 0;
   overflow: visible;
+  filter: drop-shadow(0 16px 24px rgb(0 0 0 / 16%));
 }
 
 .carousel-button {
@@ -324,7 +296,8 @@ button {
   padding: 0;
   border: 1px solid rgb(28 33 35 / 10%);
   border-radius: 7px;
-  background: rgb(255 255 255 / 68%);
+  background: rgb(255 255 255 / 78%);
+  backdrop-filter: blur(16px) saturate(1.12);
   color: #283031;
   cursor: pointer;
   font-size: 16px;
@@ -332,7 +305,7 @@ button {
   transition:
     background 140ms ease,
     border-color 140ms ease,
-    transform 140ms ease,
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
     opacity 140ms ease;
 }
 
@@ -386,16 +359,17 @@ button {
   background:
     linear-gradient(180deg, rgb(255 255 255 / 86%), rgb(241 246 244 / 80%)),
     rgb(255 255 255 / 72%);
+  backdrop-filter: blur(16px) saturate(1.12);
   color: #202426;
   cursor: pointer;
   transition:
     border-color 150ms ease,
     background 150ms ease,
     box-shadow 150ms ease,
-    transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+    transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
   transform: translateY(calc(var(--arc-y) + var(--card-lift)));
-  animation: card-pop 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: calc(var(--card-index) * 28ms);
+  animation: card-pop 340ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--card-index) * 34ms);
 }
 
 .pet-card:hover {
@@ -420,7 +394,7 @@ button {
 }
 
 .pet-card.is-switching {
-  animation: card-switch 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: card-switch 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .pet-card-preview {
@@ -481,7 +455,7 @@ button {
 @keyframes picker-enter {
   from {
     opacity: 0;
-    transform: translateY(14px) scaleX(0.82) scaleY(0.92);
+    transform: translateY(12px) scale(0.92);
   }
 
   to {
@@ -493,7 +467,7 @@ button {
 @keyframes row-slide-in {
   from {
     opacity: 0;
-    transform: translateX(18px);
+    transform: translateX(22px);
   }
 
   to {
@@ -505,7 +479,7 @@ button {
 @keyframes row-slide-in-reverse {
   from {
     opacity: 0;
-    transform: translateX(-18px);
+    transform: translateX(-22px);
   }
 
   to {
@@ -545,8 +519,7 @@ button {
     color: #f2ece2;
   }
 
-  .bubble,
-  .picker {
+  .bubble {
     border-color: rgb(255 255 255 / 12%);
     background:
       linear-gradient(180deg, rgb(34 38 38 / 92%), rgb(26 28 29 / 88%)),
@@ -597,11 +570,6 @@ button {
     background:
       linear-gradient(135deg, rgb(32 82 76 / 54%), rgb(80 55 42 / 40%)),
       rgb(255 255 255 / 8%);
-  }
-
-  .picker::after {
-    border-color: rgb(255 255 255 / 10%);
-    background: rgb(26 28 29 / 88%);
   }
 
   .pet-card-preview {

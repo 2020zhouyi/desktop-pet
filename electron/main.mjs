@@ -16,7 +16,6 @@ const mascotAspectRatio = 192 / 208;
 const defaultMascotWidth = 112;
 const overlayPadding = 12;
 const pickerWindowBounds = { width: 660, height: 430 };
-const pickerMascotBottom = 18;
 const windowBounds = transparentWindow
   ? overlayBoundsForMascot(defaultMascotWidth)
   : { width: 520, height: 620 };
@@ -350,10 +349,9 @@ function setPickerWindowOpen(enabled) {
 function resizeWindowForPicker(mascotCenter) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   const center = mascotCenter ?? currentMascotScreenCenter();
-  const mascotHeight = mascotHeightForWidth(currentMascotWidth);
   const nextBounds = {
     x: Math.round(center.x - pickerWindowBounds.width / 2),
-    y: Math.round(center.y - (pickerWindowBounds.height - pickerMascotBottom - mascotHeight / 2)),
+    y: Math.round(center.y - pickerWindowBounds.height / 2),
     width: pickerWindowBounds.width,
     height: pickerWindowBounds.height,
   };
@@ -363,21 +361,10 @@ function resizeWindowForPicker(mascotCenter) {
 function currentMascotScreenCenter() {
   if (!mainWindow || mainWindow.isDestroyed()) return { x: 0, y: 0 };
   const bounds = mainWindow.getBounds();
-  const mascotHeight = mascotHeightForWidth(currentMascotWidth);
-  if (isPickerOpen) {
-    return {
-      x: bounds.x + bounds.width / 2,
-      y: bounds.y + bounds.height - pickerMascotBottom - mascotHeight / 2,
-    };
-  }
   return {
     x: bounds.x + bounds.width / 2,
     y: bounds.y + bounds.height / 2,
   };
-}
-
-function mascotHeightForWidth(widthPx) {
-  return widthPx / mascotAspectRatio;
 }
 
 function startOverlayDrag(payload) {
