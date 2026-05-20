@@ -103,6 +103,13 @@ button {
   background: transparent;
   cursor: nwse-resize;
   opacity: 0;
+  visibility: hidden;
+  transform: translate(2px, 2px) scale(0.82);
+  pointer-events: none;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease,
+    visibility 140ms ease;
 }
 
 .resize-handle::after {
@@ -117,10 +124,13 @@ button {
   content: "";
 }
 
-.pet-hit-area:hover .resize-handle,
+.pet-shell:not(.is-picker-open) .pet-hit-area:hover .resize-handle,
 .resize-handle:focus-visible,
 .is-resizing .resize-handle {
   opacity: 0.85;
+  visibility: visible;
+  transform: translate(0, 0) scale(1);
+  pointer-events: auto;
 }
 
 .is-resizing,
