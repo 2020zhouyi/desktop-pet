@@ -726,7 +726,7 @@ function compactPetName(name: string): string {
 function arcOffset(index: number, count: number): number {
   const center = (count - 1) / 2;
   const distance = Math.abs(index - center);
-  return Math.round(8 - distance * distance * 3);
+  return Math.round(distance * distance * 5 - 14);
 }
 
 function initialsFor(name: string): string {

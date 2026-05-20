@@ -228,15 +228,15 @@ button {
 
 .picker {
   position: absolute;
-  right: max(24px, calc((100% - 594px) / 2));
-  bottom: calc(50% + var(--mascot-height, 121px) / 2 + 12px);
-  left: max(24px, calc((100% - 594px) / 2));
+  right: max(56px, calc((100% - 500px) / 2));
+  bottom: calc(50% + var(--mascot-height, 121px) / 2 + 14px);
+  left: max(56px, calc((100% - 500px) / 2));
   z-index: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 8px;
-  height: 132px;
+  height: 118px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -248,8 +248,8 @@ button {
 
 .picker-header {
   position: absolute;
-  top: -34px;
-  right: 0;
+  top: -30px;
+  right: 4px;
   z-index: 3;
 }
 
@@ -282,7 +282,7 @@ button {
 
 .pet-carousel {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) 30px;
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
   align-items: center;
   gap: 10px;
   min-height: 0;
@@ -294,8 +294,8 @@ button {
 .carousel-button {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 78px;
+  width: 28px;
+  height: 66px;
   padding: 0;
   border: 1px solid rgb(28 33 35 / 10%);
   border-radius: 7px;
@@ -334,7 +334,7 @@ button {
 .pet-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  gap: 7px;
   min-width: 0;
   overflow: visible;
   animation: row-slide-in 300ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -348,12 +348,13 @@ button {
 .pet-card {
   --arc-y: 0px;
   --card-lift: 0px;
+  --card-scale: 1;
 
   position: relative;
   display: grid;
-  grid-template-rows: 72px minmax(0, 1fr);
-  gap: 7px;
-  height: 112px;
+  grid-template-rows: 58px minmax(0, 1fr);
+  gap: 6px;
+  height: 94px;
   min-width: 0;
   padding: 7px;
   border: 1px solid rgb(28 33 35 / 10%);
@@ -371,7 +372,8 @@ button {
     background 150ms ease,
     box-shadow 150ms ease,
     transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
-  transform: translateY(calc(var(--arc-y) + var(--card-lift)));
+  transform: translateY(calc(var(--arc-y) + var(--card-lift))) scale(var(--card-scale));
+  transform-origin: 50% 88%;
   animation: card-pop 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: calc(var(--card-index) * 22ms);
   backface-visibility: hidden;
@@ -380,7 +382,9 @@ button {
 
 .pet-card:hover {
   --card-lift: -4px;
+  --card-scale: 1.08;
 
+  z-index: 4;
   border-color: rgb(33 125 116 / 26%);
   background:
     linear-gradient(180deg, rgb(255 255 255 / 96%), rgb(238 247 244 / 90%)),
@@ -388,8 +392,10 @@ button {
 }
 
 .pet-card.active {
-  --card-lift: -8px;
+  --card-lift: -5px;
+  --card-scale: 1.04;
 
+  z-index: 3;
   border-color: rgb(33 125 116 / 62%);
   background:
     linear-gradient(135deg, rgb(232 247 244 / 90%), rgb(255 247 239 / 88%)),
@@ -408,7 +414,7 @@ button {
   display: grid;
   place-items: center;
   width: 100%;
-  height: 72px;
+  height: 58px;
   border-radius: 8px;
   background:
     radial-gradient(circle at 50% 78%, rgb(33 125 116 / 14%), transparent 52%),
@@ -418,7 +424,7 @@ button {
 
 .pet-card-sprite {
   display: block;
-  width: 58px;
+  width: 48px;
   aspect-ratio: 192 / 208;
   background-repeat: no-repeat;
   background-position: 0 0;
@@ -447,7 +453,7 @@ button {
 }
 
 .pet-card-name {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   line-height: 15px;
 }
@@ -497,26 +503,26 @@ button {
 @keyframes card-pop {
   from {
     opacity: 0;
-    transform: translateY(calc(var(--arc-y) + 8px)) scale(0.94);
+    transform: translateY(calc(var(--arc-y) + 8px)) scale(0.9);
   }
 
   to {
     opacity: 1;
-    transform: translateY(calc(var(--arc-y) + var(--card-lift))) scale(1);
+    transform: translateY(calc(var(--arc-y) + var(--card-lift))) scale(var(--card-scale));
   }
 }
 
 @keyframes card-switch {
   0% {
-    transform: translateY(calc(var(--arc-y) + var(--card-lift))) scale(1);
+    transform: translateY(calc(var(--arc-y) + var(--card-lift))) scale(var(--card-scale));
   }
 
   48% {
-    transform: translateY(calc(var(--arc-y) - 12px)) scale(1.06);
+    transform: translateY(calc(var(--arc-y) - 10px)) scale(1.1);
   }
 
   100% {
-    transform: translateY(calc(var(--arc-y) + var(--card-lift))) scale(1);
+    transform: translateY(calc(var(--arc-y) + var(--card-lift))) scale(var(--card-scale));
   }
 }
 
