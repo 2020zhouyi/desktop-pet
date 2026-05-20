@@ -17,7 +17,7 @@ const defaultMascotWidth = 112;
 const overlayPadding = 12;
 const speechBubbleMinWidth = 260;
 const speechBubbleHeadroom = 96;
-const pickerWindowBounds = { width: 660, height: 430 };
+const pickerWindowBounds = { width: 660, height: 500 };
 const windowBounds = transparentWindow
   ? overlayBoundsForMascot(defaultMascotWidth)
   : { width: 520, height: 620 };
