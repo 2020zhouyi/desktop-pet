@@ -622,6 +622,7 @@ function PetPicker({
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const pageCount = Math.max(1, Math.ceil(pets.length / pageSize));
   const visiblePets = pets.slice(pageIndex * pageSize, pageIndex * pageSize + pageSize);
+  const visibleSlots = Array.from({ length: pageSize }, (_, index) => visiblePets[index] ?? null);
   const canGoBack = pageIndex > 0;
   const canGoForward = pageIndex < pageCount - 1;
 
@@ -667,7 +668,25 @@ function PetPicker({
           data-hover-index={hoveredIndex ?? undefined}
           onPointerLeave={() => setHoveredIndex(null)}
         >
-          {visiblePets.map((pet, index) => {
+          {visibleSlots.map((pet, index) => {
+            const slotStyle = {
+              "--arc-y": `${arcOffset(index, pageSize)}px`,
+              "--card-index": index,
+              "--card-z": cardDepth(index),
+            } as CSSProperties;
+
+            if (!pet) {
+              return (
+                <span
+                  key={`empty-slot:${pageIndex}:${index}`}
+                  className="pet-card pet-card-empty"
+                  style={slotStyle}
+                  aria-hidden="true"
+                  onPointerEnter={() => setHoveredIndex(null)}
+                />
+              );
+            }
+
             const isSelected = pet.id === selected?.id;
             const isSwitching = pet.id === switchingPetId;
             const previewUrl = previews[pet.id];
@@ -677,12 +696,7 @@ function PetPicker({
                 key={`${pet.source}:${pet.id}`}
                 type="button"
                 className={`pet-card ${isSelected ? "active" : ""} ${isSwitching ? "is-switching" : ""} ${hoveredIndex === index ? "is-hovered" : ""}`}
-                style={
-                  {
-                    "--arc-y": `${arcOffset(index, visiblePets.length)}px`,
-                    "--card-index": index,
-                  } as CSSProperties
-                }
+                style={slotStyle}
                 title={pet.displayName}
                 onPointerEnter={() => setHoveredIndex(index)}
                 onFocus={() => setHoveredIndex(index)}
@@ -737,6 +751,10 @@ function arcOffset(index: number, count: number): number {
   const center = (count - 1) / 2;
   const distance = Math.abs(index - center);
   return Math.round(distance * distance * 5 - 14);
+}
+
+function cardDepth(index: number): number {
+  return 10 - Math.abs(index - 2);
 }
 
 function initialsFor(name: string): string {
