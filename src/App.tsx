@@ -621,7 +621,11 @@ function PetPicker({
   const [pageDirection, setPageDirection] = useState<"next" | "previous">("next");
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const pageCount = Math.max(1, Math.ceil(pets.length / pageSize));
-  const visiblePets = pets.slice(pageIndex * pageSize, pageIndex * pageSize + pageSize);
+  const visibleStart =
+    pageIndex === pageCount - 1 && pets.length > pageSize
+      ? Math.max(0, pets.length - pageSize)
+      : pageIndex * pageSize;
+  const visiblePets = pets.slice(visibleStart, visibleStart + pageSize);
   const visibleSlots = Array.from({ length: pageSize }, (_, index) => visiblePets[index] ?? null);
   const canGoBack = pageIndex > 0;
   const canGoForward = pageIndex < pageCount - 1;
