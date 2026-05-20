@@ -253,7 +253,7 @@ export default function App() {
     window.setTimeout(() => {
       setSwitchingPetId(null);
       closePetPicker();
-    }, 180);
+    }, 320);
   };
 
   const queueResizeMascot = (widthPx: number) => {
@@ -618,6 +618,7 @@ function PetPicker({
 }) {
   const pageSize = 5;
   const [pageIndex, setPageIndex] = useState(0);
+  const [pageDirection, setPageDirection] = useState<"next" | "previous">("next");
   const pageCount = Math.max(1, Math.ceil(pets.length / pageSize));
   const visiblePets = pets.slice(pageIndex * pageSize, pageIndex * pageSize + pageSize);
   const canGoBack = pageIndex > 0;
@@ -630,18 +631,18 @@ function PetPicker({
     }
   }, [pets.length, selected?.id]);
 
-  const goBack = () => setPageIndex((current) => Math.max(0, current - 1));
-  const goForward = () => setPageIndex((current) => Math.min(pageCount - 1, current + 1));
+  const goBack = () => {
+    setPageDirection("previous");
+    setPageIndex((current) => Math.max(0, current - 1));
+  };
+  const goForward = () => {
+    setPageDirection("next");
+    setPageIndex((current) => Math.min(pageCount - 1, current + 1));
+  };
 
   return (
     <aside className="picker no-drag" aria-label="Choose pet">
       <header className="picker-header">
-        <div>
-          <strong>Choose Pet</strong>
-          <span>
-            {pageIndex + 1}/{pageCount} · {pets.length} models
-          </span>
-        </div>
         <button className="icon-button" type="button" aria-label="Close picker" onClick={onClose}>
           ×
         </button>
@@ -658,16 +659,24 @@ function PetPicker({
           &lt;
         </button>
 
-        <div className="pet-row">
-          {visiblePets.map((pet) => {
+        <div className="pet-row" key={pageIndex} data-direction={pageDirection}>
+          {visiblePets.map((pet, index) => {
             const isSelected = pet.id === selected?.id;
             const isSwitching = pet.id === switchingPetId;
             const previewUrl = previews[pet.id];
+            const displayName = compactPetName(pet.displayName);
             return (
               <button
                 key={`${pet.source}:${pet.id}`}
                 type="button"
                 className={`pet-card ${isSelected ? "active" : ""} ${isSwitching ? "is-switching" : ""}`}
+                style={
+                  {
+                    "--arc-y": `${arcOffset(index, visiblePets.length)}px`,
+                    "--card-index": index,
+                  } as CSSProperties
+                }
+                title={pet.displayName}
                 onClick={() => onSelect(pet.id)}
               >
                 <span className="pet-card-preview" aria-hidden="true">
@@ -681,8 +690,7 @@ function PetPicker({
                   )}
                 </span>
                 <span className="pet-card-copy">
-                  <span className="pet-card-name">{pet.displayName}</span>
-                  <span className="pet-card-source">{sourceName(pet.source)}</span>
+                  <span className="pet-card-name">{displayName}</span>
                 </span>
               </button>
             );
@@ -705,10 +713,20 @@ function PetPicker({
   );
 }
 
-function sourceName(source: PetOption["source"]): string {
-  if (source === "codex") return "Codex";
-  if (source === "sample") return "Sample";
-  return "Local";
+function compactPetName(name: string): string {
+  const normalized = name
+    .replace(/\s+Codex Pet\s+/i, " #")
+    .replace(/\s+/g, " ")
+    .trim();
+  const chars = Array.from(normalized);
+  if (chars.length <= 10) return normalized;
+  return `${chars.slice(0, 8).join("")}...`;
+}
+
+function arcOffset(index: number, count: number): number {
+  const center = (count - 1) / 2;
+  const distance = Math.abs(index - center);
+  return Math.round(distance * distance * 3 - 8);
 }
 
 function initialsFor(name: string): string {
