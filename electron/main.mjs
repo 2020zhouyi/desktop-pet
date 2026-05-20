@@ -15,7 +15,7 @@ const transparentWindow = process.env.DESKTOP_PET_DEBUG !== "1";
 const mascotAspectRatio = 192 / 208;
 const defaultMascotWidth = 112;
 const overlayPadding = 12;
-const speechBubbleMinWidth = 260;
+const speechBubbleMinWidth = 340;
 const speechBubbleHeadroom = 96;
 const pickerWindowBounds = { width: 660, height: 500 };
 const windowBounds = transparentWindow

@@ -241,8 +241,8 @@ button {
   left: 50%;
   bottom: calc(50% + var(--mascot-height, 121px) / 2 + 10px);
   z-index: 2;
-  max-width: min(240px, calc(100% - 44px));
-  padding: 7px 10px;
+  max-width: min(320px, calc(100% - 32px));
+  padding: 8px 13px;
   border: 1px solid rgb(37 42 42 / 10%);
   border-radius: 999px;
   background: rgb(255 255 255 / 88%);
@@ -253,12 +253,12 @@ button {
   color: #252829;
   font-size: 12px;
   font-weight: 650;
-  line-height: 17px;
+  line-height: 18px;
   text-align: center;
   overflow-wrap: anywhere;
   pointer-events: none;
   transform: translateX(-50%);
-  animation: speech-bubble-life 3200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: speech-bubble-life 3200ms linear both;
   will-change: opacity, transform;
 }
 
@@ -661,18 +661,28 @@ button {
 @keyframes speech-bubble-life {
   0% {
     opacity: 0;
-    transform: translateX(-50%) translateY(8px) scale(0.94);
+    transform: translateX(-50%) translateY(10px) scale(0.9);
   }
 
-  9%,
+  7% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-2px) scale(1.03);
+  }
+
+  13%,
   78% {
     opacity: 1;
     transform: translateX(-50%) translateY(0) scale(1);
   }
 
+  88% {
+    opacity: 0.78;
+    transform: translateX(-50%) translateY(-2px) scale(0.99);
+  }
+
   100% {
     opacity: 0;
-    transform: translateX(-50%) translateY(-5px) scale(0.98);
+    transform: translateX(-50%) translateY(-7px) scale(0.97);
   }
 }
 
