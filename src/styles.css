@@ -56,17 +56,18 @@ button {
 
 .pet-hit-area {
   position: relative;
-  width: var(--mascot-width, 112px);
+  width: var(--mascot-width, 120px);
   aspect-ratio: 192 / 208;
   padding: 0;
   border: 0;
   cursor: grab;
   background: transparent;
   -webkit-app-region: no-drag;
-  transition: transform 160ms ease;
+  transition: none;
   contain: layout style;
   overflow: visible;
   will-change: transform;
+  transform: translateZ(0);
 }
 
 .pet-hit-area:active {
@@ -74,12 +75,12 @@ button {
 }
 
 .is-dragging .pet-hit-area {
-  transform: scale(0.95);
-  transition: transform 160ms ease;
+  transform: translateZ(0);
+  transition: none;
 }
 
 .is-picker-open.is-dragging .pet-hit-area {
-  transform: scale(0.95);
+  transform: translateZ(0);
 }
 
 .pet {
@@ -87,8 +88,11 @@ button {
   aspect-ratio: 192 / 208;
   background-repeat: no-repeat;
   background-size: 800% 900%;
+  image-rendering: crisp-edges;
   image-rendering: pixelated;
   pointer-events: none;
+  transform: translateZ(0);
+  backface-visibility: hidden;
   will-change: background-position;
 }
 
@@ -308,10 +312,12 @@ button {
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 1px solid rgb(28 33 35 / 10%);
+  border: 1px solid rgb(28 33 35 / 18%);
   border-radius: 999px;
-  background: rgb(255 255 255 / 82%);
-  backdrop-filter: blur(14px) saturate(1.1);
+  background: #fff;
+  box-shadow:
+    0 7px 18px rgb(0 0 0 / 12%),
+    0 1px 0 rgb(255 255 255 / 86%) inset;
   color: #323739;
   cursor: pointer;
   transition:
@@ -608,24 +614,24 @@ button {
 @keyframes row-slide-in {
   from {
     opacity: 0;
-    transform: translateX(16px);
+    transform: translate3d(16px, 0, 0);
   }
 
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translate3d(var(--drag-offset, 0px), 0, 0);
   }
 }
 
 @keyframes row-slide-in-reverse {
   from {
     opacity: 0;
-    transform: translateX(-16px);
+    transform: translate3d(-16px, 0, 0);
   }
 
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translate3d(var(--drag-offset, 0px), 0, 0);
   }
 }
 

@@ -27,10 +27,7 @@ contextBridge.exposeInMainWorld("desktopPet", {
     ipcRenderer.send("window:pointer-passthrough", enabled);
     return Promise.resolve();
   },
-  setPickerOpen: (enabled) => {
-    ipcRenderer.send("window:picker-open", enabled);
-    return Promise.resolve();
-  },
+  setPickerOpen: (enabled) => ipcRenderer.invoke("window:picker-open", enabled),
   showContextMenu: () => ipcRenderer.invoke("window:context-menu"),
   close: () => ipcRenderer.invoke("app:close"),
   onStatusChanged: (callback) => {

@@ -12,7 +12,8 @@ const isDev = !app.isPackaged;
 const PET_PORT = Number(process.env.DESKTOP_PET_PORT ?? 7777);
 const transparentWindow = process.env.DESKTOP_PET_DEBUG !== "1";
 const mascotAspectRatio = 192 / 208;
-const defaultMascotWidth = 112;
+const mascotWidthStep = 12;
+const defaultMascotWidth = 120;
 const overlayPadding = 12;
 const speechBubbleMinWidth = 340;
 const speechBubbleHeadroom = 96;
@@ -21,8 +22,8 @@ const windowBounds = transparentWindow
   ? overlayBoundsForMascot(defaultMascotWidth)
   : { width: 520, height: 620 };
 const mascotSize = {
-  min: 80,
-  max: 224,
+  min: 84,
+  max: 228,
 };
 const dragRelease = {
   sampleWindowMs: 100,
@@ -303,9 +304,9 @@ function registerIpc() {
   ipcMain.on("window:pointer-passthrough", (_event, enabled) => {
     setPointerPassthrough(Boolean(enabled));
   });
-  ipcMain.on("window:picker-open", (_event, enabled) => {
-    setPickerWindowOpen(Boolean(enabled));
-  });
+  ipcMain.handle("window:picker-open", (_event, enabled) =>
+    setPickerWindowOpen(Boolean(enabled)),
+  );
   ipcMain.handle("window:context-menu", () => {
     showPetContextMenu();
   });
@@ -342,8 +343,8 @@ function setPointerPassthrough(enabled) {
 }
 
 function setPickerWindowOpen(enabled) {
-  if (!mainWindow || mainWindow.isDestroyed() || !transparentWindow) return;
-  if (isPickerOpen === enabled) return;
+  if (!mainWindow || mainWindow.isDestroyed() || !transparentWindow) return windowStatus();
+  if (isPickerOpen === enabled) return windowStatus();
 
   stopOverlayDrag();
   stopInertia();
@@ -356,7 +357,7 @@ function setPickerWindowOpen(enabled) {
     mainWindow.moveTop();
     setPointerPassthrough(false);
     resizeWindowForPicker(mascotCenter);
-    return;
+    return windowStatus();
   }
 
   const mascotCenter = currentMascotScreenCenter();
@@ -364,6 +365,7 @@ function setPickerWindowOpen(enabled) {
   resizeOverlayForMascot(currentMascotWidth, mascotCenter);
   mainWindow.setFocusable(false);
   setPointerPassthrough(true);
+  return windowStatus();
 }
 
 function resizeWindowForPicker(mascotCenter) {
@@ -558,7 +560,12 @@ function clampBoundsToDisplay(bounds) {
 
 function resizeOverlayForMascot(widthPx, mascotCenter) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-  const width = clamp(Math.round(Number(widthPx)), mascotSize.min, mascotSize.max);
+  const rawWidth = Math.round(Number(widthPx));
+  const width = clamp(
+    Math.round(rawWidth / mascotWidthStep) * mascotWidthStep,
+    mascotSize.min,
+    mascotSize.max,
+  );
   if (!Number.isFinite(width)) return;
   currentMascotWidth = width;
   if (isPickerOpen) return;

@@ -14,9 +14,10 @@ import type { Frame } from "./petAnimation";
 import "./styles.css";
 
 const dragThresholdPx = 4;
-const minMascotWidthPx = 80;
-const maxMascotWidthPx = 224;
-const defaultMascotWidthPx = 112;
+const mascotWidthStepPx = 12;
+const minMascotWidthPx = 84;
+const maxMascotWidthPx = 228;
+const defaultMascotWidthPx = 120;
 const mascotAspectRatio = 192 / 208;
 const bubbleDurationMs = 3200;
 const idleBubbleDelayMs = 6 * 60 * 1000;
@@ -130,6 +131,7 @@ export default function App() {
   const [isPickerOpen, setPickerOpen] = useState(() =>
     new URLSearchParams(window.location.search).has("picker"),
   );
+  const [isPickerVisible, setPickerVisible] = useState(false);
   const [isDragging, setDragging] = useState(false);
   const [isResizing, setResizing] = useState(false);
   const [mascotWidth, setMascotWidth] = useState(defaultMascotWidthPx);
@@ -228,15 +230,29 @@ export default function App() {
   useEffect(() => desktopPetApi.onOpenPetPicker(() => setPickerOpen(true)), []);
 
   useEffect(() => {
-    void desktopPetApi.setPickerOpen(isPickerOpen);
+    let disposed = false;
+
     if (isPickerOpen) setPointerPassthrough(false);
     if (isPickerOpen) {
       clearIdleTimer();
       clearBubbleTimer();
       setCurrentBubble(null);
+      setPickerVisible(false);
+      void desktopPetApi.setPickerOpen(true).then(() => {
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(() => {
+            if (!disposed) setPickerVisible(true);
+          });
+        });
+      });
     } else {
+      setPickerVisible(false);
+      void desktopPetApi.setPickerOpen(false);
       scheduleIdleBubble();
     }
+    return () => {
+      disposed = true;
+    };
   }, [isPickerOpen]);
 
   useEffect(() => {
@@ -400,7 +416,6 @@ export default function App() {
       hasMoved: false,
     };
     setDragging(true);
-    closePetPicker();
   };
 
   const onPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
@@ -459,10 +474,8 @@ export default function App() {
     event.preventDefault();
     event.stopPropagation();
 
-    const nextWidth = clamp(
+    const nextWidth = snapMascotWidth(
       resize.startWidthPx + event.screenX - resize.startScreenX,
-      minMascotWidthPx,
-      maxMascotWidthPx,
     );
     setMascotWidth((current) => current === nextWidth ? current : nextWidth);
     queueResizeMascot(nextWidth);
@@ -668,7 +681,7 @@ export default function App() {
           </div>
         </div>
 
-        {isPickerOpen ? (
+        {isPickerVisible ? (
           <PetPicker
             pets={status.pets}
             selected={selected}
@@ -685,6 +698,11 @@ export default function App() {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
+}
+
+function snapMascotWidth(widthPx: number): number {
+  const snapped = Math.round(widthPx / mascotWidthStepPx) * mascotWidthStepPx;
+  return clamp(snapped, minMascotWidthPx, maxMascotWidthPx);
 }
 
 function fallbackMascotHit(x: number, y: number): boolean {
