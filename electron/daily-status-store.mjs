@@ -1,8 +1,8 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const sharedGoodFor = ["轻点戳", "看风向", "收拾桌面", "慢慢开工"];
-const sharedAvoid = ["过度弹窗", "强度暗示", "乱用图标"];
+const sharedGoodFor = ["截图", "换外观", "亲友贴贴", "轻松日常"];
+const sharedAvoid = ["嘴硬", "站桩", "临时开荒"];
 
 export const defaultMenpai = "qixiu";
 
@@ -100,8 +100,8 @@ export function generateDailyStatus(request) {
       heart: metric(random),
       social: metric(random),
     },
-    goodFor: pickManyBySeed(skinItem.goodForPool, random, 2),
-    avoid: pickManyBySeed(skinItem.avoidPool, random, 1),
+    goodFor: pickManyBySeed(skinItem.goodForPool, random, 3),
+    avoid: pickManyBySeed(skinItem.avoidPool, random, 3),
     petLine: pickBySeed(skinItem.linePool, random),
     actionId: "daily.reveal.generic",
   };
@@ -115,8 +115,8 @@ export function dailyStatusCacheKey(request) {
 
 function skin(menpai, displayName, animalAnchor, glyph, titlePool, linePool) {
   return {
-    skinId: `daily-skin-${menpai}-v1`,
-    skinVersion: "v1",
+    skinId: `daily-skin-${menpai}-v2`,
+    skinVersion: "v2",
     menpai,
     displayName,
     animalAnchor,

@@ -28,8 +28,8 @@ export function generateDailyStatus(request: DailyStatusRequest): DailyJianghuSt
       heart: metric(random),
       social: metric(random),
     },
-    goodFor: pickManyBySeed(skin.goodForPool, random, 2),
-    avoid: pickManyBySeed(skin.avoidPool, random, 1),
+    goodFor: pickManyBySeed(skin.goodForPool, random, 3),
+    avoid: pickManyBySeed(skin.avoidPool, random, 3),
     petLine: pickBySeed(skin.linePool, random),
     actionId: "daily.reveal.generic",
   };

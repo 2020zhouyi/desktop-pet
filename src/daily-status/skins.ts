@@ -1,7 +1,7 @@
 import type { DailyStatusSkin, MenpaiId } from "./types";
 
-const sharedGoodFor = ["轻点戳", "看风向", "收拾桌面", "慢慢开工"];
-const sharedAvoid = ["过度弹窗", "强度暗示", "乱用图标"];
+const sharedGoodFor = ["截图", "换外观", "亲友贴贴", "轻松日常"];
+const sharedAvoid = ["嘴硬", "站桩", "临时开荒"];
 
 export const dailyStatusSkins: DailyStatusSkin[] = [
   skin("duanshi", "段氏", "小熊猫", "red-panda", "扇", ["小熊猫摇扇", "竹影翻肚", "洱海醒风"], ["风大，先把扇子打开。", "今天先听水声。", "竹叶动了，心也稳了。", "我翻个肚，马上就好。", "慢慢来，洱海不催。", "扇子一开，江湖见面。"], "#A94B3B", "#2E7D7A", "#D7A64A", "#F6EEE7", ["折扇", "竹叶", "水纹"]),
@@ -55,8 +55,8 @@ function skin(
   motifs: string[],
 ): DailyStatusSkin {
   return {
-    skinId: `daily-skin-${menpai}-v1`,
-    skinVersion: "v1",
+    skinId: `daily-skin-${menpai}-v2`,
+    skinVersion: "v2",
     menpai,
     displayName,
     animalAnchor,

@@ -19,7 +19,7 @@ const overlayPadding = 12;
 const speechBubbleMinWidth = 340;
 const speechBubbleHeadroom = 96;
 const dailyStatusMinWidth = 380;
-const dailyStatusHeadroom = 430;
+const dailyStatusHeadroom = 700;
 const pickerWindowBounds = { width: 660, height: 500 };
 const windowBounds = transparentWindow
   ? overlayBoundsForMascot(defaultMascotWidth)
