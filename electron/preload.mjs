@@ -28,6 +28,9 @@ contextBridge.exposeInMainWorld("desktopPet", {
     return Promise.resolve();
   },
   setPickerOpen: (enabled) => ipcRenderer.invoke("window:picker-open", enabled),
+  getDailyStatus: (payload) => ipcRenderer.invoke("daily-status:get", payload),
+  markDailyStatusSeen: (payload) => ipcRenderer.invoke("daily-status:mark-seen", payload),
+  dismissDailyStatus: (payload) => ipcRenderer.invoke("daily-status:dismiss", payload),
   showContextMenu: () => ipcRenderer.invoke("window:context-menu"),
   close: () => ipcRenderer.invoke("app:close"),
   onStatusChanged: (callback) => {
@@ -39,5 +42,10 @@ contextBridge.exposeInMainWorld("desktopPet", {
     const listener = () => callback();
     ipcRenderer.on("pet:open-picker", listener);
     return () => ipcRenderer.removeListener("pet:open-picker", listener);
+  },
+  onOpenDailyStatus: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on("daily-status:open", listener);
+    return () => ipcRenderer.removeListener("daily-status:open", listener);
   },
 });

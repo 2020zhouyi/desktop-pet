@@ -5,6 +5,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { BehaviorController } from "./behavior-controller.mjs";
+import { createDailyStatusStore, inferMenpaiForPet } from "./daily-status-store.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
@@ -17,6 +18,8 @@ const defaultMascotWidth = 120;
 const overlayPadding = 12;
 const speechBubbleMinWidth = 340;
 const speechBubbleHeadroom = 96;
+const dailyStatusMinWidth = 380;
+const dailyStatusHeadroom = 430;
 const pickerWindowBounds = { width: 660, height: 500 };
 const windowBounds = transparentWindow
   ? overlayBoundsForMascot(defaultMascotWidth)
@@ -59,6 +62,7 @@ let inertiaSession = null;
 let visualInsets = { left: 0, top: 0, right: 0, bottom: 0 };
 let currentMascotWidth = defaultMascotWidth;
 let isPickerOpen = false;
+let dailyStatusStore = null;
 const spritesheetUrlCache = new Map();
 const petPreviewUrlCache = new Map();
 
@@ -156,6 +160,11 @@ async function loadPets() {
         pets.push({
           ...manifest,
           id: `${entry.source}:${folder.name}`,
+          menpai: manifest.menpai ?? inferMenpaiForPet({
+            id: `${entry.source}:${folder.name}`,
+            folder: folder.name,
+            displayName: manifest.displayName,
+          }),
           folder: petFolder,
           source: entry.source,
           spritesheetFilePath: spritesheetPath,
@@ -263,6 +272,29 @@ function setPetState(nextState, durationMs) {
   });
 }
 
+async function getDailyStatusForPayload(payload = {}) {
+  if (!dailyStatusStore) throw new Error("Daily status store is not ready.");
+  const selected = selectedPetMeta();
+  const petId = typeof payload.petId === "string" && payload.petId
+    ? payload.petId
+    : selected?.id ?? "unknown";
+  const menpai = typeof payload.menpai === "string" && payload.menpai
+    ? payload.menpai
+    : selected?.menpai ?? inferMenpaiForPet(selected);
+  return dailyStatusStore.get({
+    date: typeof payload.date === "string" && payload.date ? payload.date : todayKey(),
+    petId,
+    menpai,
+  });
+}
+
+function todayKey() {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
 function playPetAction(state, durationMs) {
   return behaviorController.requestState(state, {
     durationMs,
@@ -289,6 +321,15 @@ function registerIpc() {
   ipcMain.handle("pet:set-state", (_event, payload) =>
     setPetState(payload?.state, payload?.durationMs),
   );
+  ipcMain.handle("daily-status:get", (_event, payload) => getDailyStatusForPayload(payload));
+  ipcMain.handle("daily-status:mark-seen", async (_event, payload) => {
+    await dailyStatusStore?.markSeen(payload?.cacheKey, payload?.seenAt);
+    return { ok: true };
+  });
+  ipcMain.handle("daily-status:dismiss", async (_event, payload) => {
+    await dailyStatusStore?.dismiss(payload?.cacheKey, payload?.dismissedAt);
+    return { ok: true };
+  });
   ipcMain.on("window:drag-start", (_event, payload) => {
     startOverlayDrag(payload);
   });
@@ -315,8 +356,10 @@ function registerIpc() {
 
 function overlayBoundsForMascot(widthPx) {
   return {
-    width: Math.ceil(Math.max(widthPx + overlayPadding * 2, speechBubbleMinWidth)),
-    height: Math.ceil(widthPx / mascotAspectRatio + overlayPadding * 2 + speechBubbleHeadroom),
+    width: Math.ceil(Math.max(widthPx + overlayPadding * 2, speechBubbleMinWidth, dailyStatusMinWidth)),
+    height: Math.ceil(
+      widthPx / mascotAspectRatio + overlayPadding * 2 + Math.max(speechBubbleHeadroom, dailyStatusHeadroom),
+    ),
   };
 }
 
@@ -589,6 +632,12 @@ function showPetContextMenu() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   Menu.buildFromTemplate([
     {
+      label: "Today's Jianghu status",
+      click: () => {
+        mainWindow?.webContents.send("daily-status:open");
+      },
+    },
+    {
       label: "Choose pet...",
       click: () => {
         setPickerWindowOpen(true);
@@ -661,6 +710,23 @@ function startStateServer() {
           ok: Boolean(pet),
           previewUrl: pet ? await petPreviewUrl(pet) : null,
         });
+      }
+      if (req.method === "GET" && url.pathname === "/daily-status") {
+        return json(res, 200, await getDailyStatusForPayload({
+          date: url.searchParams.get("date"),
+          petId: url.searchParams.get("petId"),
+          menpai: url.searchParams.get("menpai"),
+        }));
+      }
+      if (req.method === "POST" && url.pathname === "/daily-status/seen") {
+        const body = await readJson(req);
+        await dailyStatusStore?.markSeen(body.cacheKey, body.seenAt);
+        return json(res, 200, { ok: true });
+      }
+      if (req.method === "POST" && url.pathname === "/daily-status/dismiss") {
+        const body = await readJson(req);
+        await dailyStatusStore?.dismiss(body.cacheKey, body.dismissedAt);
+        return json(res, 200, { ok: true });
       }
       if (req.method === "POST" && url.pathname === "/state") {
         const body = await readJson(req);
@@ -801,6 +867,7 @@ async function petPreviewUrl(pet) {
 }
 
 app.whenReady().then(async () => {
+  dailyStatusStore = createDailyStatusStore(app.getPath("userData"));
   registerIpc();
   await loadPets().catch((error) => {
     console.error("Failed to load bundled pets:", error);

@@ -279,6 +279,233 @@ button {
   transform: translateX(-50%) rotate(45deg);
 }
 
+.is-daily-status-open .pet-hit-area {
+  align-self: end;
+  margin-bottom: 16px;
+}
+
+.daily-status-card {
+  position: absolute;
+  left: 50%;
+  bottom: calc(16px + var(--mascot-height, 121px) + 14px);
+  z-index: 4;
+  width: min(344px, calc(100% - 24px));
+  max-height: 432px;
+  padding: 14px;
+  border: 2px solid color-mix(in srgb, var(--daily-ink) 78%, transparent);
+  border-radius: 16px;
+  overflow: hidden;
+  color: var(--daily-ink);
+  background:
+    radial-gradient(circle at 86% 12%, color-mix(in srgb, var(--daily-accent) 18%, transparent), transparent 26%),
+    linear-gradient(135deg, rgb(255 255 255 / 28%), transparent 42%),
+    var(--daily-paper);
+  box-shadow:
+    0 18px 36px rgb(0 0 0 / 18%),
+    0 1px 0 rgb(255 255 255 / 64%) inset;
+  transform: translateX(-50%);
+  animation: daily-card-enter 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.daily-status-card::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 18px 24px, rgb(53 42 34 / 8%) 0 1px, transparent 1px),
+    radial-gradient(circle at 84px 72px, rgb(53 42 34 / 5%) 0 1px, transparent 1px);
+  background-size: 96px 96px;
+  content: "";
+  mix-blend-mode: multiply;
+}
+
+.daily-status-card > * {
+  position: relative;
+}
+
+.daily-status-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px;
+  align-items: start;
+  gap: 10px;
+}
+
+.daily-status-menpai {
+  margin: 0 0 4px;
+  color: var(--daily-secondary);
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 15px;
+}
+
+.daily-status-header h2 {
+  margin: 0;
+  color: var(--daily-primary);
+  font-size: 23px;
+  font-weight: 850;
+  line-height: 29px;
+  letter-spacing: 0;
+}
+
+.daily-status-seal {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border: 2px solid color-mix(in srgb, var(--daily-primary) 72%, var(--daily-ink));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--daily-primary) 86%, white);
+  color: var(--daily-paper);
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 7px 14px rgb(0 0 0 / 12%);
+}
+
+.daily-status-summary {
+  margin: 10px 0 12px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 19px;
+}
+
+.daily-status-metrics {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.daily-status-metric {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 8px;
+  min-height: 18px;
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.daily-status-metric meter {
+  width: 100%;
+  height: 10px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(53 42 34 / 12%);
+}
+
+.daily-status-metric meter::-webkit-meter-bar {
+  border: 0;
+  border-radius: 999px;
+  background: rgb(53 42 34 / 12%);
+}
+
+.daily-status-metric meter::-webkit-meter-optimum-value {
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--daily-secondary), var(--daily-accent));
+}
+
+.daily-status-metric strong {
+  text-align: right;
+}
+
+.daily-status-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.daily-status-chip-label,
+.daily-status-chip {
+  display: inline-grid;
+  place-items: center;
+  min-height: 22px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 760;
+  line-height: 14px;
+}
+
+.daily-status-chip-label {
+  width: 24px;
+  color: var(--daily-paper);
+  background: var(--daily-primary);
+}
+
+.daily-status-chip {
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--daily-secondary) 28%, transparent);
+  background: rgb(255 255 255 / 42%);
+}
+
+.daily-status-chip.muted {
+  color: color-mix(in srgb, var(--daily-ink) 76%, white);
+}
+
+.daily-status-line {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--daily-accent);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 34%);
+  font-size: 12px;
+  font-weight: 720;
+  line-height: 17px;
+}
+
+.daily-status-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.daily-status-actions button,
+.daily-status-peek {
+  border: 1px solid rgb(40 36 32 / 12%);
+  background: rgb(255 255 255 / 78%);
+  color: #2c2925;
+  cursor: pointer;
+  font-weight: 760;
+  box-shadow: 0 7px 18px rgb(0 0 0 / 10%);
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.daily-status-actions button {
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.daily-status-actions button:hover,
+.daily-status-peek:hover {
+  background: #fff;
+}
+
+.daily-status-actions button:active,
+.daily-status-peek:active {
+  transform: translateY(1px);
+}
+
+.daily-status-peek {
+  position: absolute;
+  left: calc(50% + var(--mascot-width, 120px) / 2 - 14px);
+  bottom: calc(50% + var(--mascot-height, 121px) / 2 - 24px);
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 999px;
+  color: #fff;
+  background: #3f7168;
+}
+
 .picker {
   position: absolute;
   right: max(16px, calc((100% - 590px) / 2));
@@ -611,6 +838,18 @@ button {
   }
 }
 
+@keyframes daily-card-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
 @keyframes row-slide-in {
   from {
     opacity: 0;
@@ -684,6 +923,14 @@ button {
 
   100% {
     transform: translateY(calc(var(--arc-y) + var(--card-lift))) scale(var(--card-scale));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .daily-status-card,
+  .daily-status-peek {
+    animation: none;
+    transition: none;
   }
 }
 
