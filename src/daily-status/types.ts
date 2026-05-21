@@ -26,12 +26,35 @@ export type DailyStatusMetrics = {
   social: number;
 };
 
+export type DailyStatusMascot =
+  | "red-panda"
+  | "mythic-deer"
+  | "parrot"
+  | "roe-deer"
+  | "fox"
+  | "leopard"
+  | "otter"
+  | "ferret"
+  | "songbird"
+  | "turtle"
+  | "falcon"
+  | "cat"
+  | "pig"
+  | "peacock"
+  | "chick"
+  | "wolf"
+  | "sheep"
+  | "monkey"
+  | "rabbit"
+  | "squirrel";
+
 export type DailyStatusSkin = {
   skinId: string;
   skinVersion: string;
   menpai: MenpaiId;
   displayName: string;
   animalAnchor: string;
+  mascot: DailyStatusMascot;
   glyph: string;
   colors: {
     primary: string;

@@ -289,19 +289,20 @@ button {
   left: 50%;
   bottom: calc(16px + var(--mascot-height, 121px) + 14px);
   z-index: 4;
-  width: min(344px, calc(100% - 24px));
-  max-height: 432px;
-  padding: 14px;
-  border: 2px solid color-mix(in srgb, var(--daily-ink) 78%, transparent);
-  border-radius: 16px;
-  overflow: hidden;
+  width: min(352px, calc(100% - 24px));
+  max-height: 438px;
+  padding: 18px 16px 14px;
+  border: 2px solid color-mix(in srgb, var(--daily-ink) 64%, transparent);
+  border-radius: 18px;
+  overflow: visible;
   color: var(--daily-ink);
   background:
-    radial-gradient(circle at 86% 12%, color-mix(in srgb, var(--daily-accent) 18%, transparent), transparent 26%),
-    linear-gradient(135deg, rgb(255 255 255 / 28%), transparent 42%),
+    radial-gradient(circle at 17% 0%, color-mix(in srgb, var(--daily-accent) 20%, transparent), transparent 28%),
+    radial-gradient(circle at 91% 14%, color-mix(in srgb, var(--daily-secondary) 12%, transparent), transparent 28%),
+    linear-gradient(135deg, rgb(255 255 255 / 36%), transparent 44%),
     var(--daily-paper);
   box-shadow:
-    0 18px 36px rgb(0 0 0 / 18%),
+    0 22px 42px rgb(0 0 0 / 16%),
     0 1px 0 rgb(255 255 255 / 64%) inset;
   transform: translateX(-50%);
   animation: daily-card-enter 260ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -310,6 +311,8 @@ button {
 .daily-status-card::before {
   position: absolute;
   inset: 0;
+  border-radius: 16px;
+  overflow: hidden;
   pointer-events: none;
   background-image:
     radial-gradient(circle at 18px 24px, rgb(53 42 34 / 8%) 0 1px, transparent 1px),
@@ -319,15 +322,28 @@ button {
   mix-blend-mode: multiply;
 }
 
+.daily-status-card::after {
+  position: absolute;
+  inset: 8px;
+  z-index: 0;
+  border: 1px dashed color-mix(in srgb, var(--daily-primary) 32%, transparent);
+  border-radius: 13px;
+  pointer-events: none;
+  content: "";
+}
+
 .daily-status-card > * {
   position: relative;
+  z-index: 1;
 }
 
 .daily-status-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 64px;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
-  gap: 10px;
+  gap: 12px;
+  min-height: 70px;
+  padding-left: 94px;
 }
 
 .daily-status-menpai {
@@ -341,29 +357,33 @@ button {
 .daily-status-header h2 {
   margin: 0;
   color: var(--daily-primary);
-  font-size: 23px;
-  font-weight: 850;
-  line-height: 29px;
+  font-size: 25px;
+  font-weight: 900;
+  line-height: 31px;
   letter-spacing: 0;
 }
 
 .daily-status-seal {
   display: grid;
   place-items: center;
-  width: 60px;
-  height: 60px;
-  border: 2px solid color-mix(in srgb, var(--daily-primary) 72%, var(--daily-ink));
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--daily-primary) 86%, white);
-  color: var(--daily-paper);
-  font-size: 30px;
-  font-weight: 900;
+  min-width: 48px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--daily-primary) 34%, transparent);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 42%);
+  color: color-mix(in srgb, var(--daily-secondary) 86%, var(--daily-ink));
+  font-size: 11px;
+  font-weight: 850;
   line-height: 1;
-  box-shadow: 0 7px 14px rgb(0 0 0 / 12%);
+  box-shadow: 0 6px 12px rgb(0 0 0 / 7%);
 }
 
 .daily-status-summary {
-  margin: 10px 0 12px;
+  margin: 2px 0 12px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 34%);
   font-size: 13px;
   font-weight: 650;
   line-height: 19px;
@@ -445,13 +465,359 @@ button {
 
 .daily-status-line {
   margin: 12px 0 0;
-  padding: 8px 10px;
-  border-left: 3px solid var(--daily-accent);
-  border-radius: 6px;
-  background: rgb(255 255 255 / 34%);
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--daily-accent) 30%, transparent);
+  border-left: 4px solid var(--daily-accent);
+  border-radius: 9px;
+  background: rgb(255 255 255 / 40%);
   font-size: 12px;
   font-weight: 720;
   line-height: 17px;
+}
+
+.daily-status-mascot {
+  --mascot-base: color-mix(in srgb, var(--daily-primary) 74%, white);
+  --mascot-light: color-mix(in srgb, var(--daily-paper) 82%, white);
+  --mascot-dark: color-mix(in srgb, var(--daily-secondary) 82%, var(--daily-ink));
+
+  position: absolute;
+  top: -30px;
+  left: 18px;
+  z-index: 3;
+  width: 92px;
+  height: 92px;
+  filter: drop-shadow(0 11px 14px rgb(0 0 0 / 16%));
+  transform: rotate(-5deg);
+}
+
+.mascot-face {
+  position: absolute;
+  left: 16px;
+  top: 18px;
+  z-index: 3;
+  width: 60px;
+  height: 56px;
+  border: 2px solid color-mix(in srgb, var(--daily-ink) 56%, transparent);
+  border-radius: 48% 48% 44% 44%;
+  background:
+    radial-gradient(circle at 50% 72%, var(--mascot-light) 0 16px, transparent 17px),
+    var(--mascot-base);
+}
+
+.mascot-face::before {
+  position: absolute;
+  left: 7px;
+  top: 26px;
+  width: 46px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 34%);
+  content: "";
+}
+
+.mascot-ear {
+  position: absolute;
+  z-index: 1;
+  width: 24px;
+  height: 32px;
+  border: 2px solid color-mix(in srgb, var(--daily-ink) 50%, transparent);
+  background: var(--mascot-base);
+}
+
+.mascot-ear.left {
+  left: 17px;
+  top: 8px;
+  border-radius: 70% 40% 60% 36%;
+  transform: rotate(-24deg);
+}
+
+.mascot-ear.right {
+  right: 17px;
+  top: 8px;
+  border-radius: 40% 70% 36% 60%;
+  transform: rotate(24deg);
+}
+
+.mascot-eye {
+  position: absolute;
+  top: 23px;
+  z-index: 4;
+  width: 6px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--daily-ink);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 68%) inset;
+}
+
+.mascot-eye.left {
+  left: 19px;
+}
+
+.mascot-eye.right {
+  right: 19px;
+}
+
+.mascot-muzzle,
+.mascot-beak {
+  position: absolute;
+  left: 50%;
+  top: 34px;
+  z-index: 4;
+  transform: translateX(-50%);
+}
+
+.mascot-muzzle {
+  width: 16px;
+  height: 10px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--daily-paper) 76%, white);
+}
+
+.mascot-muzzle::after {
+  position: absolute;
+  left: 6px;
+  top: 3px;
+  width: 4px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--daily-ink);
+  content: "";
+}
+
+.mascot-beak,
+.mascot-wing,
+.mascot-crest,
+.mascot-tail {
+  display: none;
+}
+
+.mascot-mark {
+  position: absolute;
+  left: 50%;
+  bottom: -14px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 22px;
+  border: 1px solid color-mix(in srgb, var(--daily-primary) 40%, transparent);
+  border-radius: 999px;
+  background: var(--daily-paper);
+  color: var(--daily-primary);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  transform: translateX(-50%);
+}
+
+.mascot-paw {
+  position: absolute;
+  top: 67px;
+  z-index: 5;
+  width: 22px;
+  height: 14px;
+  border: 2px solid color-mix(in srgb, var(--daily-ink) 48%, transparent);
+  border-radius: 999px 999px 8px 8px;
+  background: var(--mascot-light);
+}
+
+.mascot-paw.left {
+  left: 18px;
+  transform: rotate(7deg);
+}
+
+.mascot-paw.right {
+  right: 18px;
+  transform: rotate(-7deg);
+}
+
+.daily-status-mascot[data-mascot="rabbit"] .mascot-ear,
+.daily-status-mascot[data-mascot="sheep"] .mascot-ear {
+  height: 48px;
+  border-radius: 999px 999px 62% 62%;
+}
+
+.daily-status-mascot[data-mascot="rabbit"] .mascot-ear.left {
+  left: 19px;
+  top: -10px;
+  transform: rotate(-8deg);
+}
+
+.daily-status-mascot[data-mascot="rabbit"] .mascot-ear.right {
+  right: 19px;
+  top: -10px;
+  transform: rotate(8deg);
+}
+
+.daily-status-mascot[data-mascot="sheep"] .mascot-face {
+  border-radius: 48%;
+  background:
+    radial-gradient(circle at 18% 15%, white 0 8px, transparent 9px),
+    radial-gradient(circle at 39% 8%, white 0 10px, transparent 11px),
+    radial-gradient(circle at 62% 10%, white 0 10px, transparent 11px),
+    radial-gradient(circle at 82% 17%, white 0 8px, transparent 9px),
+    var(--mascot-base);
+}
+
+.daily-status-mascot[data-mascot="cat"] .mascot-ear,
+.daily-status-mascot[data-mascot="fox"] .mascot-ear,
+.daily-status-mascot[data-mascot="wolf"] .mascot-ear,
+.daily-status-mascot[data-mascot="leopard"] .mascot-ear {
+  width: 26px;
+  height: 30px;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.daily-status-mascot[data-mascot="fox"] .mascot-tail,
+.daily-status-mascot[data-mascot="squirrel"] .mascot-tail,
+.daily-status-mascot[data-mascot="ferret"] .mascot-tail,
+.daily-status-mascot[data-mascot="red-panda"] .mascot-tail {
+  position: absolute;
+  right: 3px;
+  top: 42px;
+  z-index: 0;
+  display: block;
+  width: 34px;
+  height: 17px;
+  border: 2px solid color-mix(in srgb, var(--daily-ink) 42%, transparent);
+  border-radius: 999px;
+  background: var(--mascot-base);
+  transform: rotate(23deg);
+}
+
+.daily-status-mascot[data-mascot="squirrel"] .mascot-tail {
+  right: -1px;
+  top: 22px;
+  width: 28px;
+  height: 52px;
+  border-radius: 999px 999px 999px 18px;
+  transform: rotate(19deg);
+}
+
+.daily-status-mascot[data-mascot="red-panda"] .mascot-face::after {
+  position: absolute;
+  inset: 13px 6px 20px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, var(--mascot-dark) 0 36%, transparent 37% 63%, var(--mascot-dark) 64%);
+  content: "";
+  opacity: 0.38;
+}
+
+.daily-status-mascot[data-mascot="chick"] .mascot-beak,
+.daily-status-mascot[data-mascot="parrot"] .mascot-beak,
+.daily-status-mascot[data-mascot="songbird"] .mascot-beak,
+.daily-status-mascot[data-mascot="falcon"] .mascot-beak,
+.daily-status-mascot[data-mascot="peacock"] .mascot-beak {
+  display: block;
+  width: 16px;
+  height: 10px;
+  border-radius: 20% 20% 70% 70%;
+  background: var(--daily-accent);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.daily-status-mascot[data-mascot="chick"] .mascot-muzzle,
+.daily-status-mascot[data-mascot="parrot"] .mascot-muzzle,
+.daily-status-mascot[data-mascot="songbird"] .mascot-muzzle,
+.daily-status-mascot[data-mascot="falcon"] .mascot-muzzle,
+.daily-status-mascot[data-mascot="peacock"] .mascot-muzzle {
+  display: none;
+}
+
+.daily-status-mascot[data-mascot="chick"] .mascot-crest,
+.daily-status-mascot[data-mascot="parrot"] .mascot-crest,
+.daily-status-mascot[data-mascot="peacock"] .mascot-crest {
+  position: absolute;
+  left: 41px;
+  top: 5px;
+  z-index: 4;
+  display: block;
+  width: 10px;
+  height: 18px;
+  border-radius: 999px 999px 0 0;
+  background: var(--daily-accent);
+}
+
+.daily-status-mascot[data-mascot="parrot"] .mascot-wing,
+.daily-status-mascot[data-mascot="songbird"] .mascot-wing,
+.daily-status-mascot[data-mascot="falcon"] .mascot-wing,
+.daily-status-mascot[data-mascot="peacock"] .mascot-wing {
+  position: absolute;
+  right: 9px;
+  top: 37px;
+  z-index: 2;
+  display: block;
+  width: 22px;
+  height: 34px;
+  border-radius: 90% 20% 80% 30%;
+  background: color-mix(in srgb, var(--daily-secondary) 74%, white);
+  transform: rotate(-18deg);
+}
+
+.daily-status-mascot[data-mascot="peacock"] .mascot-tail {
+  position: absolute;
+  left: 8px;
+  top: 6px;
+  z-index: 0;
+  display: block;
+  width: 76px;
+  height: 62px;
+  border-radius: 999px 999px 34px 34px;
+  background:
+    radial-gradient(circle at 24% 42%, var(--daily-accent) 0 4px, transparent 5px),
+    radial-gradient(circle at 50% 28%, var(--daily-accent) 0 4px, transparent 5px),
+    radial-gradient(circle at 76% 42%, var(--daily-accent) 0 4px, transparent 5px),
+    color-mix(in srgb, var(--daily-secondary) 42%, transparent);
+}
+
+.daily-status-mascot[data-mascot="pig"] .mascot-muzzle {
+  width: 22px;
+  height: 15px;
+  background: color-mix(in srgb, var(--daily-accent) 56%, white);
+}
+
+.daily-status-mascot[data-mascot="turtle"] .mascot-face {
+  border-radius: 46%;
+  background:
+    linear-gradient(90deg, transparent 0 45%, color-mix(in srgb, var(--daily-secondary) 35%, transparent) 46% 54%, transparent 55%),
+    linear-gradient(0deg, transparent 0 45%, color-mix(in srgb, var(--daily-secondary) 28%, transparent) 46% 54%, transparent 55%),
+    var(--mascot-base);
+}
+
+.daily-status-mascot[data-mascot="monkey"] .mascot-ear,
+.daily-status-mascot[data-mascot="otter"] .mascot-ear,
+.daily-status-mascot[data-mascot="red-panda"] .mascot-ear {
+  top: 21px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+
+.daily-status-mascot[data-mascot="monkey"] .mascot-ear.left,
+.daily-status-mascot[data-mascot="otter"] .mascot-ear.left,
+.daily-status-mascot[data-mascot="red-panda"] .mascot-ear.left {
+  left: 8px;
+}
+
+.daily-status-mascot[data-mascot="monkey"] .mascot-ear.right,
+.daily-status-mascot[data-mascot="otter"] .mascot-ear.right,
+.daily-status-mascot[data-mascot="red-panda"] .mascot-ear.right {
+  right: 8px;
+}
+
+.daily-status-mascot[data-mascot="roe-deer"] .mascot-crest,
+.daily-status-mascot[data-mascot="mythic-deer"] .mascot-crest {
+  position: absolute;
+  left: 27px;
+  top: -1px;
+  z-index: 4;
+  display: block;
+  width: 38px;
+  height: 28px;
+  border-top: 3px solid var(--daily-accent);
+  border-left: 3px solid var(--daily-accent);
+  border-right: 3px solid var(--daily-accent);
+  border-radius: 14px 14px 0 0;
 }
 
 .daily-status-actions {

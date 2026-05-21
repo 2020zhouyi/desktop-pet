@@ -20,12 +20,17 @@ export function DailyStatusCard({ status, onClose }: DailyStatusCardProps) {
 
   return (
     <article className="daily-status-card no-drag" style={style} aria-label="今日江湖状态">
+      <DailyStatusMascot
+        animalAnchor={status.animalAnchor}
+        glyph={status.glyph}
+        mascot={skin.mascot}
+      />
       <header className="daily-status-header">
         <div>
           <p className="daily-status-menpai">{skin.displayName} · {status.animalAnchor}</p>
           <h2>{status.title}</h2>
         </div>
-        <div className="daily-status-seal" aria-hidden="true">{status.glyph}</div>
+        <div className="daily-status-seal" aria-hidden="true">{skin.motifs[0]}</div>
       </header>
 
       <p className="daily-status-summary">{status.summary}</p>
@@ -52,6 +57,40 @@ export function DailyStatusCard({ status, onClose }: DailyStatusCardProps) {
         <button type="button" onClick={onClose}>关闭</button>
       </footer>
     </article>
+  );
+}
+
+function DailyStatusMascot({
+  animalAnchor,
+  glyph,
+  mascot,
+}: {
+  animalAnchor: string;
+  glyph: string;
+  mascot: string;
+}) {
+  return (
+    <div
+      className="daily-status-mascot"
+      data-mascot={mascot}
+      aria-label={`${animalAnchor}趴在今日江湖状态卡边缘`}
+      title={animalAnchor}
+    >
+      <span className="mascot-tail" aria-hidden="true" />
+      <span className="mascot-ear left" aria-hidden="true" />
+      <span className="mascot-ear right" aria-hidden="true" />
+      <span className="mascot-crest" aria-hidden="true" />
+      <span className="mascot-wing" aria-hidden="true" />
+      <span className="mascot-face">
+        <span className="mascot-eye left" aria-hidden="true" />
+        <span className="mascot-eye right" aria-hidden="true" />
+        <span className="mascot-muzzle" aria-hidden="true" />
+        <span className="mascot-beak" aria-hidden="true" />
+        <span className="mascot-mark" aria-hidden="true">{glyph}</span>
+      </span>
+      <span className="mascot-paw left" aria-hidden="true" />
+      <span className="mascot-paw right" aria-hidden="true" />
+    </div>
   );
 }
 
