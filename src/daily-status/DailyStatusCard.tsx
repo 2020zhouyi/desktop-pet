@@ -11,6 +11,7 @@ type DailyStatusCardProps = {
 
 export function DailyStatusCard({ status, onClose }: DailyStatusCardProps) {
   const skin = dailyStatusSkinForMenpai(status.menpai);
+  const hasArtBackground = status.menpai === "cangjian";
   const [lineIndex, setLineIndex] = useState(() =>
     Math.max(0, skin.linePool.indexOf(status.petLine)),
   );
@@ -22,10 +23,17 @@ export function DailyStatusCard({ status, onClose }: DailyStatusCardProps) {
     "--daily-accent": skin.colors.accent,
     "--daily-paper": skin.colors.paper,
     "--daily-ink": skin.colors.ink,
+    "--daily-bg": hasArtBackground
+      ? "url('/assets/daily-status/cangjian-card-bg-v1.png')"
+      : undefined,
   } as CSSProperties;
 
   return (
-    <article className="daily-status-card no-drag" style={style} aria-label="今日江湖状态">
+    <article
+      className={`daily-status-card no-drag ${hasArtBackground ? "is-art-bg" : ""}`}
+      style={style}
+      aria-label="今日江湖状态"
+    >
       <div className="daily-card-corner" aria-hidden="true" />
       <header className="daily-status-header">
         <div className="daily-status-title-row">
@@ -35,11 +43,13 @@ export function DailyStatusCard({ status, onClose }: DailyStatusCardProps) {
           </button>
         </div>
         <div className="daily-status-sect-badge">{skin.displayName}</div>
-        <DailyStatusMascot
-          animalAnchor={status.animalAnchor}
-          glyph={status.glyph}
-          mascot={skin.mascot}
-        />
+        {hasArtBackground ? null : (
+          <DailyStatusMascot
+            animalAnchor={status.animalAnchor}
+            glyph={status.glyph}
+            mascot={skin.mascot}
+          />
+        )}
       </header>
 
       <section className="daily-status-hero">
