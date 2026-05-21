@@ -19,7 +19,8 @@
     "pet:wait": "node scripts/pet-state.mjs waiting",
     "pet:review": "node scripts/pet-state.mjs review",
     "pet:fail": "node scripts/pet-state.mjs failed",
-    "pet:idle": "node scripts/pet-state.mjs idle"
+    "pet:idle": "node scripts/pet-state.mjs idle",
+    "daily-status:validate": "node scripts/validate-daily-status.mjs"
   },
   "dependencies": {
     "react": "^19.2.6",
