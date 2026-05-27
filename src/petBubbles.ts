@@ -13,7 +13,7 @@ const fallbackLines: BubbleLines = {
 
 const linesBySect: Record<string, BubbleLines> = {
   段氏: {
-    welcome: ["扇面开，今日江湖有风。"],
+    welcome: ["扇面开，桌面有风。"],
     idle: ["洱海风起，适合摸鱼。"],
     click: ["别点，我在算距离。"],
     drag: ["君子动口不动手……把我放回去。"],
@@ -74,7 +74,7 @@ const linesBySect: Record<string, BubbleLines> = {
   },
   丐帮: {
     welcome: ["江湖开张，先来一口。"],
-    idle: ["今日江湖，先讲义气。"],
+    idle: ["义气先行，桌面开张。"],
     click: ["先喝一口再说。"],
     drag: ["君山岛不包邮！"],
   },
@@ -122,7 +122,7 @@ const linesBySect: Record<string, BubbleLines> = {
   },
   七秀: {
     welcome: ["转身上线，花瓣就位。"],
-    idle: ["今日状态：美丽且困。"],
+    idle: ["花瓣就位，美丽且困。"],
     click: ["别碰发型。"],
     drag: ["水袖要打结了。"],
   },

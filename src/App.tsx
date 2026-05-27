@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { desktopPetApi, localPreviewStatus } from "./desktopPetApi";
-import { DailyStatusCard, inferMenpaiForPetId } from "./daily-status";
 import { bubbleTextForPet } from "./petBubbles";
 import { atlas, backgroundPosition, sequenceFor } from "./petAnimation";
 import type { PetOption, PetState, PetStatus } from "./types";
 import type { BubbleScene } from "./petBubbles";
-import type { DailyStatusCacheRecord } from "./daily-status";
 import type {
   CSSProperties,
   MouseEvent as ReactMouseEvent,
@@ -23,7 +21,6 @@ const defaultMascotWidthPx = 120;
 const mascotAspectRatio = 192 / 208;
 const bubbleDurationMs = 3200;
 const idleBubbleDelayMs = 6 * 60 * 1000;
-const dailyStatusAutoHideMs = 8000;
 const bubbleCooldownMs: Record<BubbleScene, number> = {
   welcome: 60 * 1000,
   idle: 4 * 60 * 1000,
@@ -141,19 +138,15 @@ export default function App() {
   const [petPreviews, setPetPreviews] = useState<Record<string, string | null>>({});
   const [switchingPetId, setSwitchingPetId] = useState<string | null>(null);
   const [currentBubble, setCurrentBubble] = useState<ActiveBubble | null>(null);
-  const [dailyStatusRecord, setDailyStatusRecord] = useState<DailyStatusCacheRecord | null>(null);
-  const [isDailyStatusVisible, setDailyStatusVisible] = useState(false);
   const dragRef = useRef<DragState | null>(null);
   const resizeRef = useRef<ResizeState | null>(null);
   const pendingResizeRef = useRef<number | null>(null);
   const resizeFrameRef = useRef<number | null>(null);
   const bubbleTimerRef = useRef<number | null>(null);
-  const dailyStatusTimerRef = useRef<number | null>(null);
   const bubbleIdRef = useRef(0);
   const idleTimerRef = useRef<number | null>(null);
   const lastBubbleAtRef = useRef<Partial<Record<BubbleScene, number>>>({});
   const lastSelectedPetIdRef = useRef<string | null>(null);
-  const lastAutoDailyKeyRef = useRef<string | null>(null);
   const currentFrameRef = useRef<Frame>({ row: 0, column: 0, durationMs: 280 });
   const hitImageRef = useRef<HTMLImageElement | null>(null);
   const hitCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -179,12 +172,6 @@ export default function App() {
     if (idleTimerRef.current === null) return;
     window.clearTimeout(idleTimerRef.current);
     idleTimerRef.current = null;
-  };
-
-  const clearDailyStatusTimer = () => {
-    if (dailyStatusTimerRef.current === null) return;
-    window.clearTimeout(dailyStatusTimerRef.current);
-    dailyStatusTimerRef.current = null;
   };
 
   const showBubble = useCallback(
@@ -235,83 +222,12 @@ export default function App() {
     scheduleIdleBubble();
   }, [scheduleIdleBubble]);
 
-  const revealDailyStatus = useCallback(
-    (record: DailyStatusCacheRecord, options: { autoHide?: boolean } = {}) => {
-      if (isPickerOpen) return;
-      clearBubbleTimer();
-      setCurrentBubble(null);
-      setDailyStatusRecord(record);
-      setDailyStatusVisible(true);
-      void desktopPetApi.markDailyStatusSeen({
-        cacheKey: record.cacheKey,
-        seenAt: new Date().toISOString(),
-      });
-
-      if (!reducedMotion) {
-        void desktopPetApi.setState("review", 700);
-        window.setTimeout(() => {
-          void desktopPetApi.setState("jumping", 900);
-        }, 720);
-      }
-
-      clearDailyStatusTimer();
-      if (options.autoHide !== false) {
-        dailyStatusTimerRef.current = window.setTimeout(() => {
-          dailyStatusTimerRef.current = null;
-          setDailyStatusVisible(false);
-        }, dailyStatusAutoHideMs);
-      }
-    },
-    [isPickerOpen, reducedMotion],
-  );
-
-  const loadDailyStatus = useCallback(
-    async (options: { forceOpen?: boolean } = {}) => {
-      if (!selected?.id || isPickerOpen) return;
-      const record = await desktopPetApi.getDailyStatus({
-        date: todayKey(),
-        petId: selected.id,
-        menpai: selected.menpai ?? inferMenpaiForPetId(selected.id, selected.displayName),
-      });
-      setDailyStatusRecord(record);
-
-      const shouldAutoOpen =
-        !record.seenAt &&
-        !record.dismissedAt &&
-        lastAutoDailyKeyRef.current !== record.cacheKey;
-      if (options.forceOpen || shouldAutoOpen) {
-        lastAutoDailyKeyRef.current = record.cacheKey;
-        revealDailyStatus(record, { autoHide: !options.forceOpen });
-      }
-    },
-    [isPickerOpen, revealDailyStatus, selected],
-  );
-
-  const closeDailyStatus = useCallback(() => {
-    clearDailyStatusTimer();
-    setDailyStatusVisible(false);
-    if (!dailyStatusRecord) return;
-    void desktopPetApi.dismissDailyStatus({
-      cacheKey: dailyStatusRecord.cacheKey,
-      dismissedAt: new Date().toISOString(),
-    });
-    setDailyStatusRecord({
-      ...dailyStatusRecord,
-      seenAt: dailyStatusRecord.seenAt ?? new Date().toISOString(),
-      dismissedAt: new Date().toISOString(),
-    });
-  }, [dailyStatusRecord]);
-
   useEffect(() => {
     void desktopPetApi.getStatus().then(setStatus);
     return desktopPetApi.onStatusChanged(setStatus);
   }, []);
 
   useEffect(() => desktopPetApi.onOpenPetPicker(() => setPickerOpen(true)), []);
-
-  useEffect(() => desktopPetApi.onOpenDailyStatus(() => {
-    void loadDailyStatus({ forceOpen: true });
-  }), [loadDailyStatus]);
 
   useEffect(() => {
     let disposed = false;
@@ -320,9 +236,7 @@ export default function App() {
     if (isPickerOpen) {
       clearIdleTimer();
       clearBubbleTimer();
-      clearDailyStatusTimer();
       setCurrentBubble(null);
-      setDailyStatusVisible(false);
       setPickerVisible(false);
       void desktopPetApi.setPickerOpen(true).then(() => {
         window.requestAnimationFrame(() => {
@@ -340,10 +254,6 @@ export default function App() {
       disposed = true;
     };
   }, [isPickerOpen]);
-
-  useEffect(() => {
-    void loadDailyStatus();
-  }, [loadDailyStatus]);
 
   useEffect(() => {
     if (!selected?.id || isPickerOpen) return;
@@ -391,7 +301,6 @@ export default function App() {
     return () => {
       clearIdleTimer();
       clearBubbleTimer();
-      clearDailyStatusTimer();
       void desktopPetApi.setPointerPassthrough(false);
     };
   }, []);
@@ -690,7 +599,7 @@ export default function App() {
   return (
     <main className="stage">
       <section
-        className={`pet-shell ${isDragging ? "is-dragging" : ""} ${isResizing ? "is-resizing" : ""} ${isPickerOpen ? "is-picker-open" : ""} ${isDailyStatusVisible ? "is-daily-status-open" : ""}`}
+        className={`pet-shell ${isDragging ? "is-dragging" : ""} ${isResizing ? "is-resizing" : ""} ${isPickerOpen ? "is-picker-open" : ""}`}
         data-avatar-overlay-content-frame="true"
         onContextMenu={(event) => {
           event.preventDefault();
@@ -723,22 +632,6 @@ export default function App() {
           >
             {currentBubble.text}
           </div>
-        ) : null}
-
-        {dailyStatusRecord && isDailyStatusVisible && !isPickerOpen ? (
-          <DailyStatusCard status={dailyStatusRecord.status} onClose={closeDailyStatus} />
-        ) : null}
-
-        {dailyStatusRecord && !isDailyStatusVisible && !isPickerOpen ? (
-          <button
-            className="daily-status-peek no-drag"
-            type="button"
-            aria-label="查看今日江湖状态"
-            title="今日江湖状态"
-            onClick={() => void loadDailyStatus({ forceOpen: true })}
-          >
-            相
-          </button>
         ) : null}
 
         <div
@@ -810,13 +703,6 @@ function clamp(value: number, min: number, max: number): number {
 function snapMascotWidth(widthPx: number): number {
   const snapped = Math.round(widthPx / mascotWidthStepPx) * mascotWidthStepPx;
   return clamp(snapped, minMascotWidthPx, maxMascotWidthPx);
-}
-
-function todayKey(): string {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}-${month}-${day}`;
 }
 
 function fallbackMascotHit(x: number, y: number): boolean {

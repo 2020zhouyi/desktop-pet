@@ -1,5 +1,3 @@
-import type { DailyStatusCacheRecord, DailyStatusRequest, MenpaiId } from "./daily-status";
-
 export type PetState =
   | "idle"
   | "running-right"
@@ -16,7 +14,6 @@ export type PetManifest = {
   displayName: string;
   description?: string;
   spritesheetPath: string;
-  menpai?: MenpaiId;
 };
 
 export type PetOption = PetManifest & {
@@ -51,20 +48,10 @@ export type DesktopPetApi = {
   }): Promise<void>;
   setPointerPassthrough(enabled: boolean): Promise<void>;
   setPickerOpen(enabled: boolean): Promise<void>;
-  getDailyStatus(request: DailyStatusRequest): Promise<DailyStatusCacheRecord>;
-  markDailyStatusSeen(payload: {
-    cacheKey: string;
-    seenAt: string;
-  }): Promise<void>;
-  dismissDailyStatus(payload: {
-    cacheKey: string;
-    dismissedAt: string;
-  }): Promise<void>;
   showContextMenu(): Promise<void>;
   close(): Promise<void>;
   onStatusChanged(callback: (status: PetStatus) => void): () => void;
   onOpenPetPicker(callback: () => void): () => void;
-  onOpenDailyStatus(callback: () => void): () => void;
 };
 
 declare global {

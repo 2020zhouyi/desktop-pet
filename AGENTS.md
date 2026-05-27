@@ -12,7 +12,6 @@
 
 - 涉及版本号、发版、打包、安装包、资源清理或提交时，先阅读：[版本与提交规范](docs/version-and-commit.md)。
 - 涉及阶段计划、功能取舍或设计决策时，优先查看并更新：[工作日志](docs/WORKLOG.md)。
-- 涉及「今日状态」模块时，查看：[最小开发计划](docs/jianghu-status-minimal-dev-plan.md)。
 
 ## Before Commit
 

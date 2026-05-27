@@ -1,10 +1,4 @@
 import type { DesktopPetApi, PetState, PetStatus } from "./types";
-import {
-  dismissLocalDailyStatus,
-  getLocalDailyStatus,
-  markLocalDailyStatusSeen,
-} from "./daily-status";
-import type { DailyStatusCacheRecord, DailyStatusRequest } from "./daily-status";
 
 const serverBase = "http://127.0.0.1:7777";
 export const localPreviewStatus: PetStatus = {
@@ -129,47 +123,6 @@ const browserApi: DesktopPetApi = {
   setVisualInsets: async () => undefined,
   setPointerPassthrough: async () => undefined,
   setPickerOpen: async () => undefined,
-  async getDailyStatus(request: DailyStatusRequest) {
-    if (!hasHttpTransport()) return getLocalDailyStatus(request);
-    try {
-      const params = new URLSearchParams({
-        date: request.date,
-        petId: request.petId,
-        menpai: request.menpai,
-      });
-      return await requestJson<DailyStatusCacheRecord>(`/daily-status?${params.toString()}`);
-    } catch {
-      return getLocalDailyStatus(request);
-    }
-  },
-  async markDailyStatusSeen(payload) {
-    if (!hasHttpTransport()) {
-      markLocalDailyStatusSeen(payload.cacheKey, payload.seenAt);
-      return;
-    }
-    try {
-      await requestJson<{ ok: boolean }>("/daily-status/seen", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-    } catch {
-      markLocalDailyStatusSeen(payload.cacheKey, payload.seenAt);
-    }
-  },
-  async dismissDailyStatus(payload) {
-    if (!hasHttpTransport()) {
-      dismissLocalDailyStatus(payload.cacheKey, payload.dismissedAt);
-      return;
-    }
-    try {
-      await requestJson<{ ok: boolean }>("/daily-status/dismiss", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-    } catch {
-      dismissLocalDailyStatus(payload.cacheKey, payload.dismissedAt);
-    }
-  },
   showContextMenu: async () => undefined,
   close: async () => undefined,
   onStatusChanged(callback) {
@@ -207,9 +160,6 @@ const browserApi: DesktopPetApi = {
     };
   },
   onOpenPetPicker() {
-    return () => undefined;
-  },
-  onOpenDailyStatus() {
     return () => undefined;
   },
 };
