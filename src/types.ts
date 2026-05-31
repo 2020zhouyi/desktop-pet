@@ -1,3 +1,5 @@
+import type { InteractionMode } from "./behavior/lifestyle";
+
 export type PetState =
   | "idle"
   | "running-right"
@@ -14,12 +16,20 @@ export type PetManifest = {
   displayName: string;
   description?: string;
   spritesheetPath: string;
+  author?: string;
+  version?: string;
+  tags?: string[];
+  faction?: string;
+  recommendedScale?: number;
+  accentColor?: string;
+  behaviorProfile?: string;
 };
 
 export type PetOption = PetManifest & {
   folder: string;
   spritesheetUrl?: string;
   source: "app" | "codex" | "project" | "sample";
+  localKind?: "builtin" | "imported";
 };
 
 export type PetStatus = {
@@ -28,9 +38,82 @@ export type PetStatus = {
   pets: PetOption[];
 };
 
+export type CodexPetImportCandidateStatus = "importable" | "installed" | "invalid";
+
+export type CodexPetImportCandidate = {
+  folderName: string;
+  id: string;
+  displayName: string;
+  description?: string;
+  author?: string;
+  version?: string;
+  tags?: string[];
+  faction?: string;
+  recommendedScale?: number;
+  accentColor?: string;
+  behaviorProfile?: string;
+  sourcePath?: string;
+  targetFolder: string;
+  spritesheetPath?: string | null;
+  status: CodexPetImportCandidateStatus;
+  reason?: string;
+  message?: string;
+};
+
+export type CodexPetImportResult = {
+  ok: boolean;
+  status: "imported" | "conflict" | "invalid" | "error";
+  folderName?: string;
+  targetFolder?: string;
+  petId?: string;
+  message: string;
+  reason?: string;
+  selectedPet?: PetOption | null;
+  statusSnapshot?: PetStatus;
+  management?: LocalPetManagementItem[];
+};
+
+export type LocalPetManagementItem = {
+  folderName: string;
+  petId: string;
+  manifestId?: string;
+  displayName: string;
+  kind: "builtin" | "imported";
+  canDelete: boolean;
+  protectedReason?: "builtin";
+};
+
+export type LocalPetDeleteResult = {
+  ok: boolean;
+  status: "deleted" | "protected" | "invalid" | "missing" | "error";
+  folderName?: string;
+  petId?: string;
+  message: string;
+  reason?: string;
+  selectedPet?: PetOption | null;
+  statusSnapshot?: PetStatus;
+  management?: LocalPetManagementItem[];
+};
+
+export type DesktopPetSettings = {
+  interactionMode: InteractionMode;
+  mascotWidthPx: number;
+  opacity: number;
+  alwaysOnTopEnabled: boolean;
+  launchAtLoginEnabled: boolean;
+  speechBubblesEnabled: boolean;
+  proactiveEventsEnabled: boolean;
+};
+
 export type DesktopPetApi = {
   getStatus(): Promise<PetStatus>;
+  getSettings(): Promise<DesktopPetSettings>;
+  updateSettings(patch: Partial<DesktopPetSettings>): Promise<DesktopPetSettings>;
   listPets(): Promise<PetOption[]>;
+  listCodexPetImports(): Promise<CodexPetImportCandidate[]>;
+  importCodexPet(folderName: string): Promise<CodexPetImportResult>;
+  listLocalPetManagement(): Promise<LocalPetManagementItem[]>;
+  deleteLocalPet(folderName: string): Promise<LocalPetDeleteResult>;
   getPetPreview(id: string): Promise<string | null>;
   selectPet(id: string): Promise<PetOption | null>;
   setState(state: PetState, durationMs?: number): Promise<PetState>;
@@ -52,6 +135,7 @@ export type DesktopPetApi = {
   close(): Promise<void>;
   onStatusChanged(callback: (status: PetStatus) => void): () => void;
   onOpenPetPicker(callback: () => void): () => void;
+  onOpenPetSettings(callback: () => void): () => void;
 };
 
 declare global {

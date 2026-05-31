@@ -5,6 +5,17 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { BehaviorController } from "./behavior-controller.mjs";
+import {
+  importCodexPet as copyCodexPet,
+  listCodexPetCandidates,
+} from "./pet-importer.mjs";
+import {
+  deleteLocalPet,
+  isImportedPetManifest,
+  listLocalPetManagement,
+} from "./pet-management.mjs";
+import { normalizePetManifest } from "./pet-manifest.mjs";
+import { createSettingsStore, settingsPathForUserData } from "./settings-store.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
@@ -16,11 +27,8 @@ const mascotWidthStep = 12;
 const defaultMascotWidth = 120;
 const overlayPadding = 12;
 const speechBubbleMinWidth = 340;
-const speechBubbleHeadroom = 96;
-const pickerWindowBounds = { width: 660, height: 500 };
-const windowBounds = transparentWindow
-  ? overlayBoundsForMascot(defaultMascotWidth)
-  : { width: 520, height: 620 };
+const speechBubbleHeadroom = 280;
+const pickerWindowBounds = { width: 760, height: 680 };
 const mascotSize = {
   min: 84,
   max: 228,
@@ -45,8 +53,9 @@ const VALID_STATES = new Set([
   "review",
 ]);
 
+const projectPetsDir = path.join(projectRoot, "pets");
 const petDirs = [
-  { source: "project", dir: path.join(projectRoot, "pets") },
+  { source: "project", dir: projectPetsDir },
 ];
 const preferredDefaultPetFolder = "jx3-u4e03-u79c0-01";
 
@@ -59,6 +68,8 @@ let inertiaSession = null;
 let visualInsets = { left: 0, top: 0, right: 0, bottom: 0 };
 let currentMascotWidth = defaultMascotWidth;
 let isPickerOpen = false;
+let alwaysOnTopEnabled = true;
+let launchAtLoginEnabled = false;
 const spritesheetUrlCache = new Map();
 const petPreviewUrlCache = new Map();
 
@@ -78,9 +89,10 @@ const behaviorController = new BehaviorController({
 });
 
 function createWindow() {
+  const initialBounds = currentWindowBounds();
   mainWindow = new BrowserWindow({
-    width: windowBounds.width,
-    height: windowBounds.height,
+    width: initialBounds.width,
+    height: initialBounds.height,
     minWidth: transparentWindow ? overlayBoundsForMascot(mascotSize.min).width : 220,
     minHeight: transparentWindow ? overlayBoundsForMascot(mascotSize.min).height : 260,
     frame: false,
@@ -90,7 +102,7 @@ function createWindow() {
     fullscreenable: false,
     focusable: !transparentWindow,
     skipTaskbar: transparentWindow,
-    alwaysOnTop: true,
+    alwaysOnTop: alwaysOnTopEnabled,
     show: false,
     backgroundColor: transparentWindow ? "#00000000" : "#f7f1e8",
     title: "Desktop Pet MVP",
@@ -103,11 +115,10 @@ function createWindow() {
     },
   });
 
-  mainWindow.setAlwaysOnTop(true, "floating");
-  mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  applyAlwaysOnTopSetting();
   mainWindow.setMenuBarVisibility(false);
   if (transparentWindow) {
-    const wakeBounds = centeredOverlayBounds(windowBounds);
+    const wakeBounds = centeredOverlayBounds(initialBounds);
     if (wakeBounds) mainWindow.setBounds(wakeBounds, false);
   } else {
     mainWindow.center();
@@ -149,15 +160,19 @@ async function loadPets() {
       if (!existsSync(manifestPath)) continue;
 
       try {
-        const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-        if (!isManifest(manifest)) continue;
-        const spritesheetPath = path.resolve(petFolder, manifest.spritesheetPath);
+        const rawManifest = JSON.parse(await readFile(manifestPath, "utf8"));
+        const manifestResult = normalizePetManifest(rawManifest);
+        if (!manifestResult.ok) continue;
+        const manifest = manifestResult.manifest;
+        const spritesheetPath = resolveSafePetAssetPath(petFolder, manifest.spritesheetPath);
+        if (!spritesheetPath) continue;
         if (!existsSync(spritesheetPath)) continue;
         pets.push({
           ...manifest,
           id: `${entry.source}:${folder.name}`,
           folder: petFolder,
           source: entry.source,
+          localKind: isImportedPetManifest(rawManifest) ? "imported" : "builtin",
           spritesheetFilePath: spritesheetPath,
         });
       } catch {
@@ -198,7 +213,7 @@ function defaultPetId(pets) {
   );
 }
 
-function centeredOverlayBounds(bounds = mainWindow?.getBounds() ?? windowBounds) {
+function centeredOverlayBounds(bounds = mainWindow?.getBounds() ?? currentWindowBounds()) {
   try {
     const cursor = screen.getCursorScreenPoint();
     const display = screen.getDisplayNearestPoint(cursor);
@@ -224,14 +239,28 @@ function mimeFor(filePath) {
   return "image/webp";
 }
 
-function isManifest(value) {
-  return (
-    value &&
-    typeof value === "object" &&
-    typeof value.id === "string" &&
-    typeof value.displayName === "string" &&
-    typeof value.spritesheetPath === "string"
-  );
+function resolveSafePetAssetPath(petFolder, relativePath) {
+  if (typeof relativePath !== "string" || !relativePath.trim()) return null;
+  if (
+    relativePath.includes("\0") ||
+    path.isAbsolute(relativePath) ||
+    path.posix.isAbsolute(relativePath) ||
+    path.win32.isAbsolute(relativePath)
+  ) {
+    return null;
+  }
+
+  const parts = relativePath.split(/[\\/]/);
+  if (parts.some((part) => part === "" || part === "." || part === "..")) return null;
+
+  const resolvedPetFolder = path.resolve(petFolder);
+  const filePath = path.resolve(resolvedPetFolder, ...parts);
+  return isPathInside(filePath, resolvedPetFolder) ? filePath : null;
+}
+
+function isPathInside(childPath, parentPath) {
+  const relative = path.relative(parentPath, childPath);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
 async function selectedPet() {
@@ -270,7 +299,7 @@ function playPetAction(state, durationMs) {
   });
 }
 
-function registerIpc() {
+function registerIpc(settingsStore) {
   ipcMain.handle("pet:get-status", () => status());
   ipcMain.handle("pet:list", () => petState.pets.map(publicPet));
   ipcMain.handle("pet:preview", async (_event, id) => {
@@ -310,7 +339,127 @@ function registerIpc() {
   ipcMain.handle("window:context-menu", () => {
     showPetContextMenu();
   });
+  ipcMain.handle("settings:get", () => settingsStore.read());
+  ipcMain.handle("settings:update", (_event, patch) =>
+    updateDesktopSettings(settingsStore, patch),
+  );
+  ipcMain.handle("pet-import:list-codex", () => listCodexImports());
+  ipcMain.handle("pet-import:import-codex", (_event, folderName) =>
+    importCodexPetFolder(folderName),
+  );
+  ipcMain.handle("pet-management:list-local", () => listLocalPetManagementItems());
+  ipcMain.handle("pet-management:delete-local", (_event, folderName) =>
+    deleteLocalPetFolder(folderName),
+  );
   ipcMain.handle("app:close", () => app.quit());
+}
+
+async function updateDesktopSettings(settingsStore, patch) {
+  const settings = await settingsStore.update(patch);
+  applyRuntimeSettings(settings);
+  return settings;
+}
+
+function applyRuntimeSettings(settings) {
+  if (!settings || typeof settings !== "object") return;
+
+  if (Number.isFinite(settings.mascotWidthPx)) {
+    currentMascotWidth = settings.mascotWidthPx;
+    resizeOverlayForMascot(settings.mascotWidthPx);
+  }
+
+  alwaysOnTopEnabled = settings.alwaysOnTopEnabled !== false;
+  launchAtLoginEnabled = settings.launchAtLoginEnabled === true;
+  applyAlwaysOnTopSetting();
+  applyLaunchAtLoginSetting();
+}
+
+function applyAlwaysOnTopSetting() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (alwaysOnTopEnabled) {
+    mainWindow.setAlwaysOnTop(true, "floating");
+  } else {
+    mainWindow.setAlwaysOnTop(false);
+  }
+  mainWindow.setVisibleOnAllWorkspaces(alwaysOnTopEnabled, {
+    visibleOnFullScreen: alwaysOnTopEnabled,
+  });
+}
+
+function applyLaunchAtLoginSetting() {
+  try {
+    app.setLoginItemSettings({ openAtLogin: launchAtLoginEnabled });
+  } catch {
+    // Login item support varies across dev/packaged platforms; settings remain persisted.
+  }
+}
+
+async function listCodexImports() {
+  const candidates = await listCodexPetCandidates({ targetRoot: projectPetsDir });
+  return candidates.map(publicImportCandidate);
+}
+
+async function importCodexPetFolder(folderName) {
+  const result = await copyCodexPet({ folderName, targetRoot: projectPetsDir });
+  if (!result.ok) return result;
+
+  await loadPets();
+  petState.selectedPetId = result.petId;
+  broadcastStatus();
+  return {
+    ...result,
+    selectedPet: await selectedPet(),
+    statusSnapshot: await status(),
+    management: await listLocalPetManagementItems(),
+  };
+}
+
+async function listLocalPetManagementItems() {
+  return listLocalPetManagement({ targetRoot: projectPetsDir });
+}
+
+async function deleteLocalPetFolder(folderName) {
+  const previousPets = petState.pets.map((pet) => pet.id);
+  const result = await deleteLocalPet({ folderName, targetRoot: projectPetsDir });
+  if (!result.ok) {
+    return {
+      ...result,
+      management: await listLocalPetManagementItems(),
+      statusSnapshot: await status(),
+    };
+  }
+
+  const deletedIndex = previousPets.indexOf(result.petId);
+  const selectedWasDeleted = petState.selectedPetId === result.petId;
+  const nextSelectedId = selectedWasDeleted
+    ? nextPetIdAfterDelete(previousPets, deletedIndex, result.petId)
+    : petState.selectedPetId;
+  spritesheetUrlCache.delete(result.petId);
+  petPreviewUrlCache.delete(result.petId);
+
+  await loadPets();
+  if (selectedWasDeleted) {
+    petState.selectedPetId = petState.pets.some((pet) => pet.id === nextSelectedId)
+      ? nextSelectedId
+      : defaultPetId(petState.pets);
+  }
+  broadcastStatus();
+
+  return {
+    ...result,
+    selectedPet: await selectedPet(),
+    statusSnapshot: await status(),
+    management: await listLocalPetManagementItems(),
+  };
+}
+
+function nextPetIdAfterDelete(petIds, deletedIndex, deletedPetId) {
+  if (deletedIndex < 0) return null;
+  return (
+    petIds.slice(deletedIndex + 1).find((id) => id !== deletedPetId) ??
+    petIds.slice(0, deletedIndex).find((id) => id !== deletedPetId) ??
+    null
+  );
 }
 
 function overlayBoundsForMascot(widthPx) {
@@ -318,6 +467,12 @@ function overlayBoundsForMascot(widthPx) {
     width: Math.ceil(Math.max(widthPx + overlayPadding * 2, speechBubbleMinWidth)),
     height: Math.ceil(widthPx / mascotAspectRatio + overlayPadding * 2 + speechBubbleHeadroom),
   };
+}
+
+function currentWindowBounds() {
+  return transparentWindow
+    ? overlayBoundsForMascot(currentMascotWidth)
+    : { width: 520, height: 620 };
 }
 
 function setVisualInsets(insets) {
@@ -336,7 +491,6 @@ function finiteNonNegative(value) {
 
 function setPointerPassthrough(enabled) {
   if (!mainWindow || mainWindow.isDestroyed() || !transparentWindow) return;
-  if (isPickerOpen && enabled) return;
   if (isPointerPassthrough === enabled) return;
   isPointerPassthrough = enabled;
   mainWindow.setIgnoreMouseEvents(enabled, { forward: true });
@@ -589,22 +743,29 @@ function showPetContextMenu() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   Menu.buildFromTemplate([
     {
-      label: "Choose pet...",
+      label: "设置...",
+      click: () => {
+        setPickerWindowOpen(true);
+        mainWindow?.webContents.send("pet:open-settings");
+      },
+    },
+    {
+      label: "选择宠物...",
       click: () => {
         setPickerWindowOpen(true);
         mainWindow?.webContents.send("pet:open-picker");
       },
     },
     { type: "separator" },
-    { label: "Wave", click: () => playPetAction("waving", 1800) },
-    { label: "Run", click: () => playPetAction("running", 1600) },
+    { label: "招手", click: () => playPetAction("waving", 1800) },
+    { label: "跑动", click: () => playPetAction("running", 1600) },
     { type: "separator" },
     {
-      label: "Open pets folder",
+      label: "打开宠物文件夹",
       click: () => shell.openPath(path.join(projectRoot, "pets")),
     },
     { type: "separator" },
-    { label: "Quit", click: () => app.quit() },
+    { label: "退出", click: () => app.quit() },
   ]).popup({ window: mainWindow });
 }
 
@@ -634,7 +795,7 @@ function createTray() {
   );
 }
 
-function startStateServer() {
+function startStateServer(settingsStore) {
   server = http.createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", `http://127.0.0.1:${PET_PORT}`);
     try {
@@ -649,11 +810,24 @@ function startStateServer() {
       if (req.method === "GET" && url.pathname === "/pets") {
         return json(res, 200, { pets: petState.pets.map(publicPet) });
       }
+      if (req.method === "GET" && url.pathname === "/codex-pets/imports") {
+        return json(res, 200, { candidates: await listCodexImports() });
+      }
+      if (req.method === "GET" && url.pathname === "/pets/local-management") {
+        return json(res, 200, { pets: await listLocalPetManagementItems() });
+      }
       if (req.method === "GET" && url.pathname === "/window") {
         return json(res, 200, windowStatus());
       }
+      if (req.method === "GET" && url.pathname === "/settings") {
+        return json(res, 200, await settingsStore.read());
+      }
       if (req.method === "POST" && url.pathname === "/wake") {
         return json(res, 200, { ok: true, window: revealPetWindow({ center: true }) });
+      }
+      if (req.method === "POST" && url.pathname === "/settings") {
+        const body = await readJson(req);
+        return json(res, 200, await updateDesktopSettings(settingsStore, body));
       }
       if (req.method === "GET" && url.pathname === "/pet/preview") {
         const pet = petState.pets.find((candidate) => candidate.id === url.searchParams.get("id"));
@@ -677,6 +851,14 @@ function startStateServer() {
           ok: true,
           pet: url.searchParams.get("assets") === "1" ? await hydratePet(pet) : publicPet(pet),
         });
+      }
+      if (req.method === "POST" && url.pathname === "/codex-pets/import") {
+        const body = await readJson(req);
+        return json(res, 200, await importCodexPetFolder(body.folderName));
+      }
+      if (req.method === "POST" && url.pathname === "/pets/delete-local") {
+        const body = await readJson(req);
+        return json(res, 200, await deleteLocalPetFolder(body.folderName));
       }
       return json(res, 404, { ok: false, error: "not_found" });
     } catch (error) {
@@ -742,6 +924,7 @@ function windowStatus() {
     focused: mainWindow.isFocused(),
     bounds: mainWindow.getBounds(),
     alwaysOnTop: mainWindow.isAlwaysOnTop(),
+    launchAtLogin: launchAtLoginEnabled,
     pointerPassthrough: isPointerPassthrough,
     pickerOpen: isPickerOpen,
     transparent: transparentWindow,
@@ -753,8 +936,7 @@ function revealPetWindow(options = {}) {
 
   stopOverlayDrag();
   stopInertia();
-  mainWindow.setAlwaysOnTop(true, "floating");
-  mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  applyAlwaysOnTopSetting();
 
   if (options.center) {
     const nextBounds = centeredOverlayBounds(mainWindow.getBounds());
@@ -775,7 +957,16 @@ function revealPetWindow(options = {}) {
 }
 
 function publicPet(pet) {
-  const { spritesheetFilePath, spritesheetUrl, ...rest } = pet;
+  const {
+    spritesheetFilePath,
+    spritesheetUrl,
+    ...rest
+  } = pet;
+  return rest;
+}
+
+function publicImportCandidate(candidate) {
+  const { manifest, sourcePath, ...rest } = candidate;
   return rest;
 }
 
@@ -801,13 +992,15 @@ async function petPreviewUrl(pet) {
 }
 
 app.whenReady().then(async () => {
-  registerIpc();
+  const settingsStore = createSettingsStore(settingsPathForUserData(app.getPath("userData")));
+  applyRuntimeSettings(await settingsStore.read());
+  registerIpc(settingsStore);
   await loadPets().catch((error) => {
     console.error("Failed to load bundled pets:", error);
   });
   createWindow();
   createTray();
-  startStateServer();
+  startStateServer(settingsStore);
 });
 
 app.on("window-all-closed", (event) => {

@@ -19,9 +19,16 @@
   - 行为或交互实现。
   - 视觉样式调整。
   - 宠物资源增删。
-  - 打包配置或平台修复。
-  - 文档和工作日志。
+- 打包配置或平台修复。
+- 文档和工作日志。
 - 探索失败的路线不要提交，提交前清理成最终状态。
+
+## 仓库边界
+
+- 桌宠核心应用在 `desktop-pet-mvp` 自己的 Git 仓库内提交。
+- 父目录的 `desktop-pet-site` 是展示站点，`petdex` 是参考/平台源快照；除非任务明确要求，不和 MVP 核心应用放进同一提交。
+- 提交前用 `git status --short` 和 `git diff --stat` 确认暂存范围，只暂存本轮确认要落地的桌宠文件。
+- `release/`、`dist/`、`node_modules/`、安装包、本地设置、日志和平台生成物不进入 git。
 
 ## 提交信息
 
@@ -56,6 +63,13 @@ docs: update MVP worklog
 至少执行：
 
 ```sh
+npm run preflight
+git status --short
+```
+
+如果只需要基础构建确认，也可以执行：
+
+```sh
 npm run build
 git status --short
 ```
@@ -66,16 +80,22 @@ git status --short
 - `http://127.0.0.1:5173/?picker=1` 可打开选择器。
 - 透明背景保持透明。
 - 角色可见区域可拖拽，透明空白区域不抢点击。
-- 选择器打开/关闭不导致角色明显错位或闪烁。
+- 设置里的大小、透明度、置顶、自启、气泡、主动提醒和互动模式能保存并在重开后恢复。
+- 选择器搜索、来源/门派筛选、内置/导入标识和 manifest 元信息在小窗口下不溢出。
 
 ## 打包检查
 
 涉及打包时：
 
-- 清理旧 `release/` 后重新构建。
-- 双端包运行 `npm run dist:all`。
-- 校验包内宠物资源数量符合预期。
-- 不包含废弃资源，例如 `codexish` 或重复副本目录。
+- 先运行 `npm run preflight`，一次性执行主要测试、资源检查、打包配置核验和构建。
+- 如需单独核验，运行 `npm run pet:check`，只读检查项目本地 `desktop-pet-mvp/pets/`。
+- 运行 `npm run package:check`，确认 electron-builder `build.files` 包含 `dist/**/*`、`electron/**/*`、`pets/**/*`、`public/**/*` 和 `package.json`，并复用本地宠物资源健康检查。
+- `npm run package:check` 不会运行 electron-builder，不会生成安装包，也不会写入 `release/`。
+- 清理旧 `release/` 后重新构建；只清理当前项目的 `desktop-pet-mvp/release`，不要清理父目录、`~/.codex/pets`、生成器、`desktop-pet-site` 或 `petdex`。
+- 双端包运行 `npm run dist:all`。这个命令会运行 electron-builder，并在 `release/` 生成 macOS/Windows 打包产物。
+- 运行 `npm run package:verify`，读取 `release/mac*/**/*.app/Contents/Resources/app.asar` 和 `release/win-unpacked/resources/app.asar`，确认包内 `/pets`、`/pets/*/pet.json` 数量、spritesheet 覆盖、本地宠物健康结果、以及副本/暂存/测试素材排除都符合发布要求。
+- `npm run package:verify` 是只读验收；它不会运行 electron-builder，不会生成安装包，也不会修改 `release/`。
+- 最后按 `docs/release-smoke.md` 做 Electron 启动冒烟，确认透明窗口、置顶、拖拽、点击挥手、picker、默认宠物和设置读取。
 
 ## 宠物资源
 
@@ -87,6 +107,8 @@ pet.json
 spritesheet.webp | spritesheet.png | spritesheet.svg
 ```
 
+- `pet.json` manifest v1 的必需字段是 `id`、`displayName`、`spritesheetPath`；可选字段是 `author`、`version`、`tags`、`faction`、`recommendedScale`、`accentColor`、`behaviorProfile`。
+- 旧 manifest 不需要补齐可选字段；非法可选字段只应在 `pet:check` 中产生 warning 或被运行时忽略。
 - 优先使用 Codex-compatible atlas：
 
 ```text

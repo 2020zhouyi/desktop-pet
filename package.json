@@ -8,7 +8,16 @@
   "author": "xianyu",
   "scripts": {
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on tcp:5173 && electron .\"",
+    "test:pet-import": "node tests/pet-importer.test.mjs",
+    "test:pet-management": "node tests/pet-management.test.mjs",
+    "test:pet-health": "node tests/pet-health.test.mjs",
+    "test:package-health": "node tests/package-health.test.mjs",
+    "test:package-verify": "node tests/package-verify.test.mjs",
+    "test:behavior": "node --experimental-strip-types tests/behavior/lifestyle.test.ts",
+    "test:behavior-queue": "node --experimental-strip-types tests/behavior/event-queue.test.ts",
+    "test:settings": "node --experimental-strip-types tests/behavior/settings-store.test.mjs",
     "build": "tsc --noEmit && vite build",
+    "preflight": "node scripts/preflight.mjs",
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:win": "npm run build && electron-builder --win",
     "dist:all": "npm run build && electron-builder --mac --win",
@@ -17,9 +26,12 @@
     "pet:jump": "node scripts/pet-state.mjs jumping",
     "pet:run": "node scripts/pet-state.mjs running 1600",
     "pet:wait": "node scripts/pet-state.mjs waiting",
-    "pet:review": "node scripts/pet-state.mjs review",
+    "pet:observe": "node scripts/pet-state.mjs review",
     "pet:fail": "node scripts/pet-state.mjs failed",
-    "pet:idle": "node scripts/pet-state.mjs idle"
+    "pet:idle": "node scripts/pet-state.mjs idle",
+    "pet:check": "node scripts/pet-health.mjs",
+    "package:check": "node scripts/package-check.mjs",
+    "package:verify": "node scripts/package-verify.mjs"
   },
   "dependencies": {
     "react": "^19.2.6",
