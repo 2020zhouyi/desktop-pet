@@ -1,6 +1,20 @@
 {
   "id": "jx3-u85cf-u5251-01",
-  "displayName": "\u85cf\u5251 Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u85cf\u5251, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "藏剑",
+  "description": "A compact Codex-style chibi version of JX3 藏剑, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "剑匣已开，叽叽上线。"
+    ],
+    "click": [
+      "别急，我换把剑。"
+    ],
+    "drag": [
+      "剑匣太重，叽不动了。"
+    ],
+    "petSwitch": [
+      "换好啦，我来接班。"
+    ]
+  }
 }

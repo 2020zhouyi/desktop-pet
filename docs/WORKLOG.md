@@ -2,12 +2,137 @@
 
 ## 当前收口状态
 
-- 桌宠 MVP 当前主线是普通桌面陪伴应用：透明 Electron 悬浮窗、React sprite 渲染、生活化行为/气泡、设置持久化、宠物选择器、显式 Codex 宠物导入和本地宠物管理。
-- 运行时资源边界保持收紧：应用只加载 `desktop-pet-mvp/pets/`；`~/.codex/pets` 只作为用户主动导入的来源，不自动同步、不被修改、不参与打包。
-- 发布前闭环是 `npm run preflight` -> 清理当前项目 `release/` -> `npm run dist:all` -> `npm run package:verify` -> `docs/release-smoke.md` 人工冒烟。
+- 桌宠 MVP 当前主线已经收敛为纯桌宠核心：透明 `PetWindow`、picker-only `ControlWindow`、sprite 渲染、四态直接交互、四类基础气泡和内置宠物选择器。
+- 运行时资源边界保持收紧：应用只读 `desktop-pet-mvp/pets/`；不扫描、不导入、不修改 `~/.codex/pets`，该目录也不参与打包。
+- 发布前闭环是 `npm run release:gate` -> `docs/release-smoke.md` 人工冒烟；其中 `release:gate` 串起 `preflight`、清理当前项目 `release/`、`dist:all` 和 `package:verify`。
 - 版本号暂未提升，仍以 `package.json` 的 `0.1.0` 为唯一来源；后续发布用户可见新节点时再单独 bump。
 
+## 2026-07-11
+
+### 删除设置并重做宠物选择器
+
+- 控制窗口进一步收缩为只接受 `?surface=control&panel=picker`；settings URL、菜单入口、React 面板、hook、公开 IPC 和 capability 已删除。
+- 桌宠不再提供 settings 页面中的大小、透明度或置顶控制；保留角色右下角直接拖拽缩放，透明度固定 100% 且始终置顶。
+- 持久化从四字段 settings 改为只写 `selectedPetId` 与 `mascotWidthPx`；为保留旧选择与尺寸继续读取旧文件名，透明度和置顶等字段写回时删除。
+- picker 从左右管理面板重做为单任务流：标题与搜索、4×2 宠物陈列、分页、底部预览确认坞；保留“卡片预览、确认后切换”。
+- 删除会把桌宠主窗切换成不透明矩形的 `DESKTOP_PET_DEBUG` 分支；主窗现在始终透明、无阴影且不可缩放。正式 smoke 断言 html/body/stage/pet shell 背景均为透明，picker 内 sprite 预览层也不再绘制方形底板。
+- 新增 picker-only surface 契约和单字段 selection store 测试；Electron smoke 真实点击卡片和确认按钮，并验证重启恢复、控制窗单例、越权 IPC 与桌宠 bounds。
+- ADR-0002 记录了移除 settings 的理由、迁移兼容和恢复能力的决策边界。
+
+### 恢复直接缩放并细化透明穿透
+
+- 恢复角色右下角 24px 拖拽把手，尺寸在 84–228px 之间按 12px 分档调整；缩放不依赖设置窗口，松手后独立持久化。
+- 主进程不再用所有动画帧的 alpha 外接矩形强制接管鼠标；窗口内命中完全交给 renderer 当前帧 alpha 像素与真实控件，主进程只在窗口外复位穿透状态。
+- 右键与托盘仍不提供设置入口；ADR-0003 记录对 ADR-0002 的局部修订。
+
+### 选择器单框体与视觉修正
+
+- `ControlWindow` 改为无原生标题栏的 frameless 窗口，自定义 picker 铺满窗口；标题区域承担拖动，右上角按钮与 Escape 负责关闭。
+- picker 保持不透明背景，避免 macOS 透明控制窗在局部重绘时出现合成伪影。
+- gallery 顶部增加 hover 安全区，第一排卡片上浮 2px 时不再被 `overflow` 裁切。
+- 底部确认栏先从黑底金黄按钮收敛为浅色方案，随后按下方 Codex 浅色规范统一重做。
+
+### 选择器统一为 Codex 浅色配色
+
+- picker 色彩系统统一为 `#f7f7f8` 页面、纯白卡片、`#e5e5e5` 边界、近黑正文和灰色辅助文字。
+- 删除金色、暖米黄、玉灰混搭以及系统暗色覆盖；选择器固定使用浅色 `color-scheme`，避免不同系统主题产生两套不一致视觉。
+- `#10a37f` 只用于当前/预览状态、焦点和确认操作，普通 hover 使用中性灰，降低全界面强调色密度。
+
+## 2026-07-10
+
+### MVP 简化收口（自动实施完成，待人工桌面验收）
+
+- 已确认保留 Electron + React、拆分 `PetWindow` / `ControlWindow` 的双窗口路线，并写入 MVP 精简规格、可执行计划和 ADR。
+- 已建立只允许 `idle`、`dragging`、`waving`、`jumping` 的四态宠物状态机。
+- JX3 reminder 已从 App、settings 契约、模块、测试、命令、preflight 和样式中删除。
+- renderer HTTP fallback 已删除；main HTTP server、state API、token 鉴权、辅助脚本和命令也已删除，Electron 只保留 preload/IPC 控制面。
+- 外部宠物导入/删除、主动 lifestyle/event queue、开机自启和旧 overlay 几何路径已删除；picker 只读内置资源，并限制同时加载的预览 atlas。
+- `PetWindow` 与单例 `ControlWindow` 已拆分；settings/picker 复用同一控制窗，控制窗不会改变桌宠 bounds。
+- settings 已收缩为 `selectedPetId`、`mascotWidthPx`、`opacity`、`alwaysOnTopEnabled`，主进程更新会实时广播给两个 renderer。
+- IPC 按 pet/control surface 做 capability 隔离，并校验 live sender、可信 URL 与 channel allowlist；控制窗并发打开请求已串行化。
+- 真实 Electron smoke 覆盖开发态与打包态，验证四态非法输入、设置同步与持久化、选宠、窗口复用/关闭、越权 IPC 拒绝和并发打开。
+- `npm run preflight`、`npm run release:gate` 和 macOS 打包可执行文件 smoke 已通过；Mac/Windows 两个 `app.asar` 均含 30 个健康宠物包，0 error / 0 warning。
+- 最终独立复审的 5 个 Important 已清零：失效 `selectedPetId` 启动时写回有效默认值；picker 快速翻页的全局预览并发上限为 9；四态与实际 renderer 动画共用 `status.state` 单一来源；包校验补齐主入口依赖和 JS/CSS 产物；smoke 真实点击宠物卡与确认按钮并检查 DOM 动画状态。
+- 自动实施已经完成；仍需按 `docs/release-smoke.md` 在真实桌面人工确认透明像素穿透、拖拽手感、平台窗口外观。macOS 包当前未签名/未公证，且使用默认应用图标。
+
+## 2026-06-05
+
+### 透明窗口交互修复
+
+- 收窄透明悬浮窗命中：只在角色 alpha 可见像素和真实控件上关闭 pointer passthrough，宠物矩形空白区域继续穿透。
+- 修复选择器打开后仍停留小窗的问题：Electron preload 改为 sandbox 兼容的 `preload.cjs`，在 `contextIsolation` + `sandbox: true` 下暴露 `window.desktopPet`；picker 打开时窗口扩到 `920x760`，顶部宠物卡完整显示，并保留右上角关闭按钮。
+- 修复宠物卡点击不切换：真实 Electron 验证已能从选择器切到 `霸刀 Codex Pet 1`，选择后自动收起回小宠物窗口。
+- 修复设置面板遮挡宠物：settings overlay 根据窗口所在屏幕左右半区自动选择 `settings-panel-side-left` / `settings-panel-side-right`，打开时出现在角色侧边。
+- 修复拖拽不移动：新增 `window:drag-move` IPC，前端 pointer move 显式把 screen 坐标传给主进程移动透明窗口，并保留原惯性采样。
+- 气泡文本改为左对齐，长文本换行后不再居中排版。
+- 验证已通过：真实 Electron 拖拽坐标变化、picker 打开/切换/关闭、settings 侧边展示，以及 `npm run preflight`。
+
+### 宠物选择器视觉优化
+
+- 将选择器从普通白色调试面板重做为“宠物图鉴”式陈列面板：顶部标题和数量统计、中央 5 卡陈列台、轻量筛选条、当前宠物资料条和底部资源坞。
+- 宠物卡片新增来源、当前选中、门派/分类信息，保留稳定的左右翻页与 hover 卡片交互，不引入弧形滚动等不稳定实验。
+- 当前宠物资料不再直接展示英文 manifest 描述，改为中文摘要，例如“内置资源 · 北天药宗 · 资源正常”。
+- 本地管理和 Codex 候选导入降级为底部资源坞，视觉上不再抢占主选择区域；暗色模式和小窗口布局同步适配。
+- Codex 候选会过滤已经整理进本地资源、已改名或已移除的外部宠物，避免 `明月使`、`纱铃`、`毒灵`、Boss 旧候选等重复出现在选择界面。
+- 真实 Electron 已验证：拖拽到屏幕偏右后再打开 picker，窗口仍会被 clamp 到可见范围，面板不出屏；点击卡片仍能切换宠物并自动关闭。
+- 验证已通过：`npm run build` 和 `npm run preflight`。
+
+## 2026-06-04
+
+### 玩家与 Boss 宠物资源整理
+
+- 项目本地 `pets/` 从 26 个资源包调整为 30 个资源包：保留 20 个 JX3 门派宠物，玩家资源整理为 `player-01` 到 `player-05`，新增 5 个 Boss 资源 `boss-01` 到 `boss-05`。
+- 玩家资源改名：`mingyue-shi` -> `player-01` / 春丽，`snowfeather` -> `player-02` / 星河菜菜子，`xiutai` -> `player-03` / 盐皂，`duling` -> `player-04` / 采风，`wanhua` -> `player-05` / 醋摆摆；`shaling` / 纱铃已从项目本地资源中移除。
+- 从 Codex 宠物仓库显式复制 5 个 Boss：唐怀仁、唐醉、柳公子、笑妆娘、阿史那承庆；复制后在项目内使用 `boss-01` 到 `boss-05` 作为 manifest id 和目录名，避免混入 `jx3-*` 门派资源命名。
+- 所有玩家包增加 `faction: 玩家` 与 `tags: ["player"]`，所有 Boss 包增加 `faction: Boss` 与 `tags: ["boss"]`，方便 picker 搜索和后续资源分类。
+- 验证已通过：`npm run pet:check`、`npm run package:check`、`npm run build`、`npm run preflight`；当前本地 release 产物仍是资源整理前产物，发布前需重新运行 `npm run release:gate`。
+
+### MVP 优化方案
+
+- 新增 `docs/mvp-optimization-plan.md`，把 5 个 subagent 的评分结果收敛成阶段化优化路线。
+- 方案按 Phase 0-5 拆解：当前状态收口、Electron 安全边界、代码结构拆分、UI 入口与可访问性、测试/CI/release gate、文档轻量化与外部接手。
+- 每个任务包含验收标准、验证命令、依赖、预计触碰文件和规模，方便后续按小步实现而不是一次性重构。
+- docs map 增加优化方案入口；后续做系统性优化时优先按该方案推进，并在每个 checkpoint 回填工作日志。
+- Phase 0 已收口：P4.1 计划顶部标记为“实现中、未提交、未发布稳定能力”，当前工作区边界仍限定在 `desktop-pet-mvp` 独立仓库内。
+- Task 1.1 已完成：本地 state API 写操作新增 `X-Desktop-Pet-Token` 校验，默认使用运行时随机 token，开发可通过 `DESKTOP_PET_API_TOKEN` 固定 token；`npm run preflight` 已通过。
+- Task 1.2 已完成：新增可信 renderer URL 判断和窗口安全 helper，主窗口拦截非预期导航/新窗口，IPC handler/send 路径统一做 sender 校验，并启用 Electron `sandbox: true`；开发 Electron 启动、真实 state API token 验证和 `npm run preflight` 已通过。
+- Task 1.3 已完成并通过 `npm run preflight`：Codex 宠物导入、本地 `pet:check` 和 `package:verify` 统一执行宠物包 allowlist，只允许 `pet.json` 与 manifest spritesheet，并拒绝额外文件、过量文件或过大 bundle；现有 26 个项目本地宠物包 0 error / 0 warning。
+- Task 2.1 已完成：新增 `useDesktopPetSettings`，把 settings 初始化读取、手动更新标记、乐观更新、保存回填、失败 best-effort 和 JX3 reminder patch 归一化从 `App.tsx` 抽出；`npm run test:settings`、`npm run test:jx3-reminders` 和 `npm run build` 已通过。
+- Task 2.2 已完成：新增 `useJx3ReminderScheduler`，把 P4.1 due alert timer、mute 等待、sleep/overlay/全局开关门控、fired keys 和 dismissible reminder event 从 `App.tsx` 抽出；新增 `npm run test:jx3-reminder-scheduler` 覆盖调度边界，专项测试和 build 已通过。
+- Task 2.3 已完成代码与专项验证：新增 `src/settings/desktopPetSettings.ts` 承接 renderer fallback settings 默认值、解析和 patch 归一化，`desktopPetApi.ts` 复用该契约；新增 `npm run test:settings-contract` 对齐 Electron store 与 renderer fallback 的默认值、缺字段、坏 JSON、合法/非法 patch 和 P4.1 模板规则。
+- Task 2.4 已完成：`styles.css` 不改视觉、不移动选择器，仅增加 base overlay、settings、JX3 reminder、speech bubble、picker、导入/本地管理、motion、响应式和 dark mode 功能分段；`npm run build` 通过，picker/settings 两个 URL 入口返回 200。
+- Phase 2 阶段门禁已通过：新增 scheduler 与 settings contract 测试进入 `scripts/preflight.mjs`，`npm run preflight` 全绿。
+- Task 3.1 已完成代码与文档更新：透明悬浮窗 hover 时显示 `宠物` / `设置` 快捷入口和 `右键菜单` 提示，右键菜单仍保留原生 settings/picker/action 入口；README 与 `docs/release-smoke.md` 已同步，`npm run build` 已通过，完整 Electron 手动冒烟留到后续 UI 阶段统一执行。
+- Task 3.2 已完成代码与专项验证：JX3 提醒面板新增“本地自填提醒”说明，显示提醒总开关关闭、静音、sleep、气泡关闭和主动提醒关闭等阻断原因，并把空摘要文案改为“今日没有启用的本地提醒”；`docs/jx3-reminder-mvp-plan.md` 同步当前风险，`npm run test:jx3-reminders` 与 `npm run build` 已通过。
+- Task 3.3 已完成代码与文档更新：settings 打开后聚焦关闭按钮，picker 打开后聚焦搜索框；Escape/关闭按钮会关闭 overlay 并把焦点还给触发快捷入口；picker 主要 aria 文案改为中文，`docs/release-smoke.md` 补入键盘与 dismissible reminder bubble 冒烟路径，`npm run build` 已通过。
+- Task 3.4 已完成代码验证：CSS 增加 `prefers-reduced-motion: reduce` 规则，关闭 picker、pet card、row 和 speech bubble 的主要动画；提醒面板关键文案字号提升，小窗口下 summary/form 增加防溢出布局；`npm run build` 已通过，小窗口和系统 reduced-motion 人工检查留到最终 Electron smoke。
+- Task 4.1 已完成代码侧测试覆盖：`test:jx3-reminder-scheduler` 覆盖 reminder due/future/fired key、sleep、气泡关闭、主动提醒关闭和 overlay open 门控，不启动 Electron 原生窗口；Phase 4 收口后 `npm run preflight` 已通过。
+- Task 4.2 已完成自动冒烟：新增 `tests/smoke/electron-smoke.mjs` 和 `npm run smoke:electron`，用临时 userData、固定 token 和随机空闲端口启动真实 Electron，验证 state API auth、settings 写入、状态切换、切宠和 picker window state；`docs/release-smoke.md` 同步该自动检查与人工窗口检查边界。
+- Task 4.3 已完成本地与配置侧：新增 `.github/workflows/ci.yml`，在 `main`、`codex/**` 和 PR 上运行 Node 24、`npm ci` 与 `npm run preflight`，不生成 release 包；README 与版本/提交规范说明 CI 边界；本地 `npm ci && npm run preflight` 已通过，远端 workflow 需推送后确认。
+- Task 4.4 已完成并真实执行：新增 `scripts/release-gate.mjs` 和 `npm run release:gate`，只清理当前项目 `release/`，依次运行 `preflight`、`dist:all` 与 `package:verify`；本轮生成 mac arm64 / win x64 release 产物，包内验证 2 个 app.asar、26 个宠物、0 error / 0 warning。macOS 当前配置 `identity=null`，日志显示跳过签名，需在 release smoke 的签名/公证表中记录为发布例外或后续项。
+- Task 5.1 已完成文档轻量化：README 从 319 行收敛为 5 分钟入口，保留 quick start、当前分层、关键命令、资源边界和发布入口；完整 tree、settings JSON shape、命令分层和资源 allowlist 下沉到 `docs/project-structure.md`。
+- Task 5.2 已完成外部模型接手文档：新增 `docs/model-handoff.md`，不依赖本地绝对路径，明确 `desktop-pet-mvp`、`desktop-pet-site`、`petdex` 边界，强调 P4.1 只做本地轻提醒，并列出关键文件、验证命令和重点评审问题。
+- Task 5.3 已完成本轮收口回看：`docs/mvp-optimization-plan.md` 保留优化前评分基线，补入本地实现复评估算、Checkpoint A/B/E 完成状态，以及远端 CI、人工 Electron smoke、macOS 签名/公证的剩余风险。
+- 文档收口后的最终验证已通过：`npm run preflight`、`npm run smoke:electron`、`npm run package:verify`；其中包内验收检查 2 个 `app.asar`、26 个本地宠物、0 error / 0 warning。
+- 本轮 Phase 0-5 代码与文档侧任务已完成；发布前仍需在真实桌面环境执行人工冒烟，并在推送后确认远端 GitHub Actions 通过。
+
+### README 与项目结构图梳理
+
+- README 新增当前项目四层分法：Electron runtime、React renderer、local resources 和 verification，明确本仓库只覆盖桌宠 MVP 核心应用。
+- README 的 `Project Structure` 改成仓库级 tree 结构图，覆盖 `electron/`、`src/behavior/`、`src/reminders/`、`pets/`、`scripts/`、`tests/`、`docs/` 和顶层配置文件职责。
+- docs map 同步标注 P4.1 剑三轻提醒主线，并把 README 定位为 tree 结构图和项目总览入口。
+- 开发检查清单补入 `npm run test:jx3-reminders`，和 `npm run preflight` 的真实执行链路保持一致。
+
 ## 2026-06-01
+
+### P4.1 剑三轻提醒 MVP
+
+- 新增 `docs/jx3-reminder-mvp-plan.md`，把 ChatGPT 中的“剑三轻量桌宠提醒功能：最小量级开发计划”落到当前 Electron 桌宠项目的真实文件边界。
+- MVP 只做本地模板、自定义提醒、今日三条摘要、静音和现有气泡提示；提醒数据写入本地 settings JSON，不接外部游戏数据、云同步、Agent 状态或任务队列。
+- 提醒气泡区别于普通陪伴气泡：停留 12 秒，并支持点击、Enter 或 Space 提前关闭。
+- 自定义提醒默认生成提前 15 分钟和提前 1 分钟两次提醒，和攻防模板的临近提醒节奏保持一致。
+- 明确不恢复已归档移除的“江湖状态 / 今日状态”重型状态卡，不新增卡片导出、每日运势或旧模块运行时入口。
+- README 和 docs map 只补入口、设置草案和使用边界，避免把长报告塞进顶层说明。
 
 ### 文档地图和项目整理
 

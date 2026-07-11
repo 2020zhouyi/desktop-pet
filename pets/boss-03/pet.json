@@ -1,0 +1,28 @@
+{
+  "id": "boss-03",
+  "displayName": "柳公子",
+  "description": "A compact Codex-style chibi version of JX3 柳公子, preserving the official character silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "faction": "Boss",
+  "tags": [
+    "boss"
+  ],
+  "bubbleLines": {
+    "welcome": [
+      "扇影一斜，清燕过桌。",
+      "好局面，值得露面。"
+    ],
+    "click": [
+      "别敲扇骨，价高。",
+      "手轻些，别留指印。"
+    ],
+    "drag": [
+      "衣摆贵，少拽。",
+      "本公子走暗道，不被拖。"
+    ],
+    "petSwitch": [
+      "扇面一翻，换我镇场。",
+      "清燕落檐，本公子接局。"
+    ]
+  }
+}

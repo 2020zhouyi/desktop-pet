@@ -1,6 +1,20 @@
 {
   "id": "jx3-u5510-u95e8-01",
-  "displayName": "\u5510\u95e8 Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u5510\u95e8, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "唐门",
+  "description": "A compact Codex-style chibi version of JX3 唐门, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "千机匣开，机关就位。"
+    ],
+    "click": [
+      "手放远点，追命要瞄准。"
+    ],
+    "drag": [
+      "零件掉了，田螺都急了。"
+    ],
+    "petSwitch": [
+      "换好啦，我来接班。"
+    ]
+  }
 }

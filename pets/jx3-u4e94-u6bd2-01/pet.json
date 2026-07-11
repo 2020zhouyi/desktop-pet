@@ -1,6 +1,20 @@
 {
   "id": "jx3-u4e94-u6bd2-01",
-  "displayName": "\u4e94\u6bd2 Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u4e94\u6bd2, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "五毒",
+  "description": "A compact Codex-style chibi version of JX3 五毒, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "小虫到齐，蛊也睡醒了。"
+    ],
+    "click": [
+      "它说别戳，会记仇。"
+    ],
+    "drag": [
+      "虫虫搬家中，慢点走。"
+    ],
+    "petSwitch": [
+      "小伙伴换岗，继续守着。"
+    ]
+  }
 }

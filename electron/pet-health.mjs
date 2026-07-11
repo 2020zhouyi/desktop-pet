@@ -3,6 +3,8 @@ import path from "node:path";
 import { invalidOptionalManifestFields } from "./pet-manifest.mjs";
 
 const requiredManifestFields = ["id", "displayName", "spritesheetPath"];
+const maxPetFileCount = 2;
+const maxPetBytes = 25 * 1024 * 1024;
 
 export async function validatePetHealth({ petsRoot } = {}) {
   if (!petsRoot) throw new Error("petsRoot is required");
@@ -109,6 +111,12 @@ export async function validatePetHealth({ petsRoot } = {}) {
         message: `spritesheet file does not exist: ${sprite.normalizedPath}.`,
       }));
     }
+
+    issues.push(...await validatePetBundleEntries({
+      petDir,
+      folderName,
+      spritesheetPath: sprite.normalizedPath,
+    }));
   }
 
   for (const [manifestId, folders] of manifestIdFolders) {
@@ -170,6 +178,68 @@ async function readPetsRoot(petsRoot, issues) {
       return [];
     }
     throw error;
+  }
+}
+
+async function validatePetBundleEntries({ petDir, folderName, spritesheetPath }) {
+  const allowedFiles = new Set(["pet.json", spritesheetPath]);
+  const files = [];
+  let totalBytes = 0;
+
+  await walkPlainFiles(petDir, async ({ relativePath, stat }) => {
+    files.push(relativePath);
+    totalBytes += stat.size;
+  });
+
+  const issues = [];
+  for (const filePath of files) {
+    if (allowedFiles.has(filePath)) continue;
+    issues.push(issue({
+      severity: "error",
+      code: "unexpected_pet_file",
+      folderName,
+      filePath,
+      message: `Pet folder contains unexpected file ${filePath}.`,
+    }));
+  }
+
+  if (files.length > maxPetFileCount) {
+    issues.push(issue({
+      severity: "error",
+      code: "too_many_pet_files",
+      folderName,
+      fileCount: files.length,
+      message: `Pet folder contains ${files.length} files; only pet.json and the spritesheet are expected.`,
+    }));
+  }
+  if (totalBytes > maxPetBytes) {
+    issues.push(issue({
+      severity: "error",
+      code: "pet_bundle_too_large",
+      folderName,
+      byteCount: totalBytes,
+      message: "Pet folder is too large for the MVP resource allowlist.",
+    }));
+  }
+
+  return issues;
+}
+
+async function walkPlainFiles(rootDir, visitor, currentDir = rootDir) {
+  const entries = await readdir(currentDir, { withFileTypes: true });
+  for (const entry of entries) {
+    const filePath = path.join(currentDir, entry.name);
+    const stat = await lstat(filePath);
+    if (stat.isSymbolicLink()) continue;
+    if (stat.isDirectory()) {
+      await walkPlainFiles(rootDir, visitor, filePath);
+      continue;
+    }
+    if (!stat.isFile()) continue;
+    await visitor({
+      relativePath: normalizePath(path.relative(rootDir, filePath)),
+      stat,
+    });
   }
 }
 
@@ -242,6 +312,10 @@ function resolveSafeSpritesheetPath(petDir, spritesheetPath) {
 function isPathInside(childPath, parentPath) {
   const relative = path.relative(parentPath, childPath);
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function normalizePath(value) {
+  return value.split(path.sep).join("/");
 }
 
 async function isPlainFile(filePath) {

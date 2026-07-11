@@ -1,6 +1,20 @@
 {
   "id": "jx3-u957f-u6b4c-01",
-  "displayName": "\u957f\u6b4c Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u957f\u6b4c, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "长歌",
+  "description": "A compact Codex-style chibi version of JX3 长歌, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "起调，桌面安静。"
+    ],
+    "click": [
+      "别打断，我刚进拍子。"
+    ],
+    "drag": [
+      "琴谱散了，咕咕也慌了。"
+    ],
+    "petSwitch": [
+      "换好啦，我来接班。"
+    ]
+  }
 }

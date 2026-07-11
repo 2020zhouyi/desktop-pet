@@ -1,6 +1,20 @@
 {
   "id": "jx3-u660e-u6559-01",
-  "displayName": "\u660e\u6559 Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u660e\u6559, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "明教",
+  "description": "A compact Codex-style chibi version of JX3 明教, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "日月初明，喵影潜行。"
+    ],
+    "click": [
+      "谁把我隐身点掉了？"
+    ],
+    "drag": [
+      "影子被你拽长了，喵。"
+    ],
+    "petSwitch": [
+      "换好啦，我来接班。"
+    ]
+  }
 }

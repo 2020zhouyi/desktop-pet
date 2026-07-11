@@ -7,6 +7,31 @@ import {
 } from "./pet-health.mjs";
 
 const requiredPlatforms = ["mac", "win"];
+const requiredRuntimeEntries = [
+  "/electron/main.mjs",
+  "/electron/preload.cjs",
+  "/electron/ipc-capabilities.mjs",
+  "/electron/pet-selection-store.mjs",
+  "/electron/pet-manifest.mjs",
+  "/electron/smoke-probe.mjs",
+  "/electron/window-geometry.mjs",
+  "/electron/window-surfaces.mjs",
+  "/electron/window-security.mjs",
+  "/dist/index.html",
+  "/package.json",
+];
+const requiredRuntimeAssetGroups = [
+  { label: "JavaScript", pattern: /^\/dist\/assets\/[^/]+\.js$/ },
+  { label: "CSS", pattern: /^\/dist\/assets\/[^/]+\.css$/ },
+];
+const retiredRuntimeEntries = [
+  "/electron/behavior-controller.mjs",
+  "/electron/state-api-auth.mjs",
+  "/electron/pet-importer.mjs",
+  "/electron/pet-management.mjs",
+  "/electron/settings-store.mjs",
+  "/scripts/pet-state.mjs",
+];
 
 export async function validatePackageArtifacts({
   projectRoot = process.cwd(),
@@ -151,6 +176,7 @@ async function validateAsarArtifact(artifact, localPets) {
   }
 
   const entrySet = new Set(entries);
+  artifactIssues.push(...findRuntimeEntryIssues(entrySet));
   const hasPetsDirectory = entrySet.has("/pets");
   const petEntries = entries.filter((entry) => entry === "/pets" || entry.startsWith("/pets/"));
   if (!hasPetsDirectory) {
@@ -213,6 +239,7 @@ async function validateAsarArtifact(artifact, localPets) {
 
   const disallowedEntries = findDisallowedPetEntries(petEntries);
   artifactIssues.push(...disallowedEntries);
+  artifactIssues.push(...findUnexpectedPackagedPetEntries(petEntries, localPets));
 
   return {
     ...artifact,
@@ -222,6 +249,81 @@ async function validateAsarArtifact(artifact, localPets) {
     errorCount: countSeverity(artifactIssues, "error"),
     warningCount: countSeverity(artifactIssues, "warning"),
   };
+}
+
+function findRuntimeEntryIssues(entrySet) {
+  const issues = [];
+
+  for (const entry of requiredRuntimeEntries) {
+    if (entrySet.has(entry)) continue;
+    issues.push(issue({
+      severity: "error",
+      code: "missing_runtime_entry",
+      entry,
+      message: `Packaged app.asar is missing required runtime entry ${entry}.`,
+    }));
+  }
+
+  for (const group of requiredRuntimeAssetGroups) {
+    if ([...entrySet].some((entry) => group.pattern.test(entry))) continue;
+    issues.push(issue({
+      severity: "error",
+      code: "missing_runtime_asset",
+      assetType: group.label,
+      message: `Packaged app.asar is missing a built ${group.label} asset under /dist/assets/.`,
+    }));
+  }
+
+  for (const entry of retiredRuntimeEntries) {
+    if (!entrySet.has(entry)) continue;
+    issues.push(issue({
+      severity: "error",
+      code: "retired_runtime_entry",
+      entry,
+      message: `Packaged app.asar contains retired runtime entry ${entry}.`,
+    }));
+  }
+
+  return issues;
+}
+
+function findUnexpectedPackagedPetEntries(entries, localPets) {
+  const expectedPets = new Map(localPets.map((pet) => [pet.folderName, pet]));
+  const issues = [];
+  const seen = new Set();
+
+  for (const entry of entries) {
+    const parts = entry.split("/").filter(Boolean);
+    if (parts.length <= 1) continue;
+    const folderName = parts[1];
+    const pet = expectedPets.get(folderName);
+    if (!pet) continue;
+
+    const allowedEntries = allowedPackagedEntriesForPet(pet);
+    if (allowedEntries.has(entry)) continue;
+    if ([...allowedEntries].some((allowed) => allowed.startsWith(`${entry}/`))) continue;
+
+    const key = `${folderName}:${entry}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    issues.push(issue({
+      severity: "error",
+      code: "unexpected_packaged_pet_entry",
+      folderName,
+      entry,
+      message: `Unexpected packaged pet entry ${entry}; only pet.json and the spritesheet are expected.`,
+    }));
+  }
+
+  return issues;
+}
+
+function allowedPackagedEntriesForPet(pet) {
+  return new Set([
+    `/pets/${pet.folderName}`,
+    `/pets/${pet.folderName}/pet.json`,
+    `/pets/${pet.folderName}/${pet.spritesheetPath}`,
+  ]);
 }
 
 async function discoverAppAsars(releaseRoot) {

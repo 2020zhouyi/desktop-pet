@@ -1,6 +1,20 @@
 {
   "id": "jx3-u884d-u5929-u5b97-01",
-  "displayName": "\u884d\u5929\u5b97 Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u884d\u5929\u5b97, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "衍天宗",
+  "description": "A compact Codex-style chibi version of JX3 衍天宗, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "魂灯亮了，今日开盘。"
+    ],
+    "click": [
+      "我算到你会手欠。"
+    ],
+    "drag": [
+      "奇门乱位，先放我下来。"
+    ],
+    "petSwitch": [
+      "换好啦，我来接班。"
+    ]
+  }
 }

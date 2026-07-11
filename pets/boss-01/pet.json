@@ -1,0 +1,28 @@
+{
+  "id": "boss-01",
+  "displayName": "唐怀仁",
+  "description": "A compact Codex-style chibi version of JX3 唐怀仁, preserving the official character silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "faction": "Boss",
+  "tags": [
+    "boss"
+  ],
+  "bubbleLines": {
+    "welcome": [
+      "天工秘录，翻到此页。",
+      "雪顶机城，今日开枢。"
+    ],
+    "click": [
+      "指尖离机枢三寸。",
+      "别乱试，误差会记账。"
+    ],
+    "drag": [
+      "须罗傀不是玩偶。",
+      "拽偏一寸，重校半日。"
+    ],
+    "petSwitch": [
+      "旧局未完，老夫接手。",
+      "主轴让开，由我验算。"
+    ]
+  }
+}

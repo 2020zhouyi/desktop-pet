@@ -1,6 +1,20 @@
 {
   "id": "jx3-u5200-u5b97-01",
-  "displayName": "\u5200\u5b97 Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u5200\u5b97, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "刀宗",
+  "description": "A compact Codex-style chibi version of JX3 刀宗, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "横刀出鞘，先看破绽。"
+    ],
+    "click": [
+      "破绽不是这么点出来的。"
+    ],
+    "drag": [
+      "游风步会走，别硬拎。"
+    ],
+    "petSwitch": [
+      "换好啦，我来接班。"
+    ]
+  }
 }

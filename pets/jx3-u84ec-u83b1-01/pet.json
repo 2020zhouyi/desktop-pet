@@ -1,6 +1,20 @@
 {
   "id": "jx3-u84ec-u83b1-01",
-  "displayName": "\u84ec\u83b1 Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u84ec\u83b1, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "蓬莱",
+  "description": "A compact Codex-style chibi version of JX3 蓬莱, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "伞开了，海风也到了。"
+    ],
+    "click": [
+      "风向乱了，别戳伞面。"
+    ],
+    "drag": [
+      "我会荡伞，不会被拎。"
+    ],
+    "petSwitch": [
+      "换好啦，我来接班。"
+    ]
+  }
 }

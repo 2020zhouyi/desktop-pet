@@ -1,6 +1,20 @@
 {
   "id": "jx3-u9738-u5200-01",
-  "displayName": "\u9738\u5200 Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u9738\u5200, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "霸刀",
+  "description": "A compact Codex-style chibi version of JX3 霸刀, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "双刀归鞘，人也归位。"
+    ],
+    "click": [
+      "别戳，刀鞘很记仇。"
+    ],
+    "drag": [
+      "这鞘很重，拖不动也正常。"
+    ],
+    "petSwitch": [
+      "换好啦，我来接班。"
+    ]
+  }
 }

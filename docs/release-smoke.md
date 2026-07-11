@@ -1,89 +1,133 @@
 # Release Smoke Checklist
 
-This checklist is for the first publishable Desktop Pet MVP build. It is manual because the key checks are native window behavior: transparency, always-on-top, click-through, drag, and picker layout.
+本清单验证当前 Desktop Pet MVP 的 picker-only 双窗口、选宠持久化、内置资源和打包产物。自动 smoke 是发布前硬门禁；人工 smoke 补充透明窗口、原生交互和平台外观检查。
 
 ## Before Smoke
 
-Run the release gate from the project root:
+从仓库根目录运行：
 
 ```sh
 npm run preflight
-rm -rf release
-npm run dist:all
-npm run package:verify
+npm run smoke:electron
 ```
 
-`rm -rf release` is only for `desktop-pet-mvp/release`. Do not clean any parent directory, `~/.codex/pets`, `desktop-pet-site`, `petdex`, or generator output.
+准备发布产物时再运行：
+
+```sh
+npm run release:gate
+```
+
+`release:gate` 会再次执行 `preflight`，只清理本仓库的 `release/`，然后执行 `dist:all` 和 `package:verify`。不要清理父目录、展示站、参考快照或其它生成器输出。
+
+构建完成后，直接验证 macOS 打包应用的生产态加载路径：
+
+```sh
+DESKTOP_PET_SMOKE_EXECUTABLE="$PWD/release/mac-arm64/Desktop Pet MVP.app/Contents/MacOS/Desktop Pet MVP" npm run smoke:electron
+```
+
+未设置 `DESKTOP_PET_SMOKE_EXECUTABLE` 时，smoke 启动 Vite 并验证开发态；设置后不启动 Vite，而是直接启动指定的打包可执行文件，并要求 renderer 使用 `file://`。
+
+## Automated Electron Smoke
+
+`npm run smoke:electron` 使用临时 `userData` 启动真实 Electron，并验证：
+
+- `PetWindow` renderer 和 preload 正常加载。
+- 内置宠物列表非空，宠物选择能写回 status 与 `selectedPetId`。
+- picker 在单例 `ControlWindow` 中渲染。
+- 真实点击宠物卡、确认切换，并在 Electron 重启后恢复选择。
+- 关闭 `ControlWindow` 后，`PetWindow` 仍存活。
+- 打开、切换和关闭控制窗前后，`PetWindow` bounds 完全不变。
+- Control/Pet 两个 surface 的越权 IPC 会被拒绝，窗口与应用保持存活。
+- 并发请求 picker 时只创建一个 `ControlWindow`。
+- settings surface 和 settings IPC 均被拒绝。
+
+任何一项失败都应阻断发布。
 
 ## Start The App
 
-Use the packaged macOS app when available:
+优先检查已打包 macOS app：
 
 ```sh
 open release/mac*/Desktop\ Pet\ MVP.app
 ```
 
-If you are only checking a development build:
+只检查开发版本时：
 
 ```sh
 npm run dev
 ```
 
-## Native Window
+## PetWindow
 
-- The desktop pet window has a transparent background; no solid rectangle is visible around the sprite.
-- The pet stays above ordinary app windows.
-- Dragging the visible pet body moves the window.
-- Transparent atlas pixels do not capture clicks meant for windows behind the pet.
-- Releasing after a fast drag gives a short inertial glide and keeps the pet on screen.
+- 桌宠周围没有不透明矩形，sprite 外保持透明。
+- 桌宠保持在普通应用窗口上方。
+- 可见 sprite 能被点击和拖拽；透明 atlas 像素不会拦截后方窗口。
+- 拖到工作区四边时，可见 sprite 能到达边缘且不会跳回透明窗口中心。
+- 快速拖动后惯性停止在屏幕内。
+- 单击而未拖动时播放挥手，并显示 `click` 气泡。
+- 完成拖拽后回到 idle，并显示 `drag` 气泡。
+- 右键桌宠只显示选择宠物和退出。
+- 桌宠保持 100% 不透明和始终置顶；悬停角色后可用右下角把手缩放，重启后尺寸保留。
 
-## Interaction
+## ControlWindow
 
-- Clicking the visible pet without dragging plays the wave animation.
-- Right-clicking the pet opens the native context menu.
-- The control bar appears on hover and does not permanently cover the pet.
-- Resizing with the bottom-right handle keeps the sprite visible and usable.
+### Picker
 
-## Picker And Pets
+- 从桌宠右键菜单打开选择器后，picker 使用独立控制窗，不覆盖透明桌宠窗口。
+- 控制窗没有系统原生标题栏或第二层外框，只显示一层自定义选择器框体；标题区域可拖动窗口，右上角关闭按钮可用。
+- 第一排宠物卡悬停上浮时，顶部边框、阴影和角色预览不被裁切。
+- 整体使用 Codex 风格浅色配色：浅灰页面、白色卡片、中性灰边界与文字、克制的绿色状态和主操作；不随系统切换为暗色。
+- 搜索能过滤内置宠物且布局不出现横向溢出。
+- 点击宠物只更新预览；确认后才切换桌宠。
+- 切换后 sprite、status 和 `selectedPetId` 一致，并播放 `petSwitch` 反馈。
+- 760×680 与最小 640×520 下均无横向溢出；4×2 卡片、底部确认坞和分页保持可用。
+- settings URL 不会渲染控制面板。
 
-- The default pet loads on first start.
-- The picker opens from the context menu or control bar.
-- Search, source filter, and faction filter narrow the picker without layout overflow.
-- The selected pet shows built-in/imported status plus manifest metadata or a resource hint.
-- Pet switching updates the visible sprite and plays the switch feedback animation.
-- Import controls are visible but do not auto-sync or modify `~/.codex/pets`.
-- Closing the picker returns the window to pet size without a visible offset jump.
+### Close And Bounds
 
-## Settings
+- 使用面板关闭按钮或 Escape 关闭控制窗。
+- 控制窗关闭后桌宠继续运行，点击、拖拽和右键仍可用。
+- 在打开控制窗前记录桌宠位置与尺寸；打开 picker 并关闭后，位置与尺寸不变。
+- 关闭控制窗不会退出应用；只有桌宠原生菜单的退出操作或系统退出才结束进程。
 
-- Opening settings shows size, opacity, always-on-top, launch-at-login, speech bubble, proactive reminder, and interaction mode controls.
-- Size and opacity changes apply to the visible pet.
-- Always-on-top and launch-at-login toggles save without crashing on the current platform.
-- Changing the interaction mode persists after closing and reopening the app.
-- Disabling speech bubbles hides bubbles while direct click/drag animations still play.
-- Disabling proactive reminders stops welcome/idle/long-session prompts.
-- Sleep mode suppresses proactive behavior; wake restores ordinary interaction.
+## Persistence
 
-## Local State API
+- 选择一个非默认内置宠物。
+- 完全退出并重新启动应用。
+- 确认选中的 `selectedPetId` 已恢复。
+- 旧 `desktop-pet-settings.json` 中的其它字段不会进入后续写回结果。
 
-With the app running, the local state API accepts a minimal state change:
+## Resources And Packages
 
-```sh
-curl -X POST http://127.0.0.1:7777/state \
-  -H 'content-type: application/json' \
-  -d '{"state":"waving","durationMs":1200}'
-```
-
-Expected result: the command returns a success JSON response and the pet waves, then returns to idle.
+- `npm run pet:check` 通过，验证仓库内置种子；Electron smoke 另验证统一用户宠物库。
+- 每个宠物目录只有 `pet.json` 和一个被 manifest 引用的 spritesheet。
+- `npm run package:verify` 在 Mac 与 Windows `app.asar` 中找到同一组内置 pets。
+- 安装包运行时不依赖仓库外资源。
+- `release/`、安装包、日志和本地选宠文件保持未跟踪。
 
 ## Finish
 
-- Quit the app from the context menu or OS app menu.
-- Confirm no extra Electron process remains running.
-- Keep `release/` as generated output; it is not intended for git.
+- 从桌宠右键菜单退出应用。
+- 确认 `PetWindow`、`ControlWindow` 和辅助 Electron 进程都已结束。
+- 若 macOS 包未签名或未公证，在发布记录中明确标记为阻断项或已接受例外。
 
 ## Evidence To Record
 
-- Command result: `npm run preflight`, `npm run dist:all`, and `npm run package:verify`.
-- Manual result: whether every checklist section above passed, plus any platform-specific exception.
-- Artifact note: generated files stay under `release/` and remain untracked.
+- Version：`package.json` 版本与 git commit SHA。
+- Gates：`npm run preflight`、`npm run smoke:electron`、`npm run release:gate` 结果。
+- Double-window：picker 单例、control close 后 pet 存活、pet bounds 不变。
+- Artifacts：
+
+  | Platform | Artifact path | SHA256 | Notes |
+  | --- | --- | --- | --- |
+  | macOS |  |  |  |
+  | Windows |  |  |  |
+
+- Signing：
+
+  | Platform | Signed? | Notarized? | Exception / follow-up |
+  | --- | --- | --- | --- |
+  | macOS |  |  |  |
+  | Windows |  |  |  |
+
+- Manual result：逐节记录通过项与平台例外。

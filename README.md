@@ -1,222 +1,256 @@
 # Desktop Pet MVP
 
-A tiny Electron + React desktop pet prototype inspired by the Codex pet renderer.
+一个可以在 macOS 和 Windows 桌面运行的透明动画桌宠。项目基于 Electron、React、TypeScript 和 Vite，支持逐像素点击穿透、角色拖拽、直接缩放、宠物选择以及可由玩家自行编辑的气泡台词。
 
-这是一个本地桌宠 MVP：主窗口使用 Electron 透明悬浮窗，渲染层使用 React + CSS sprite atlas，交互方式尽量贴近 Codex pet 的桌面覆盖层。
+## 功能
 
-## Documentation
+- 透明、无边框、始终置顶的桌宠窗口
+- 角色周围透明区域点击穿透
+- 鼠标悬停播放跳跃动作
+- 向左、向右拖拽使用不同跑步动画
+- 右下角拖拽手柄调整大小
+- 独立的浅色宠物选择窗口
+- 文件夹式宠物管理：复制即导入，删除即移除
+- 每个宠物在自己的 `pet.json` 中维护名称、Tag 和气泡台词
+- 首次运行自动把内置宠物复制到统一的可写宠物目录
 
-桌宠核心应用的文档入口在 [`docs/README.md`](docs/README.md)。先从这里确认当前主线、资源边界和文档地图，再按任务进入工作日志、manifest、行为计划或发布冒烟清单。
+## 普通玩家快速使用
 
-## Run
+### 1. 启动桌宠
+
+从 Release 下载对应平台的压缩包或安装包：
+
+- macOS：`.dmg` 或 `mac-arm64.zip`
+- Windows：`win-x64.zip`
+
+当前本地构建未进行 Apple 签名和公证。macOS 如果阻止首次启动，可在“系统设置 → 隐私与安全性”中确认打开。
+
+### 2. 基本操作
+
+| 操作 | 效果 |
+| --- | --- |
+| 鼠标悬停角色 | 播放跳跃动作 |
+| 单击角色 | 播放点击反馈和气泡 |
+| 左右拖拽角色 | 移动桌宠，并播放对应方向的跑步动作 |
+| 拖拽右下角手柄 | 调整桌宠大小 |
+| 右键角色 | 打开“选择宠物 / 退出”菜单 |
+
+### 3. 选择宠物
+
+右键桌宠，点击“选择宠物…”。在选择窗口中：
+
+1. 点击卡片预览角色。
+2. 点击“确认使用”。
+3. 选择结果和角色大小会自动保存。
+
+## 宠物管理
+
+在选择宠物窗口点击右上角“管理宠物”，应用会打开唯一的用户宠物目录。
+
+macOS 默认位置：
+
+```text
+~/Library/Application Support/desktop-pet-mvp/pets/
+```
+
+Windows 默认位置：
+
+```text
+%APPDATA%\desktop-pet-mvp\pets\
+```
+
+所有内置宠物和自定义宠物都在这个目录中，每个角色使用一个独立文件夹：
+
+```text
+pets/
+├── 七秀/
+│   ├── pet.json
+│   └── spritesheet.webp
+├── 唐怀仁/
+│   ├── pet.json
+│   └── spritesheet.webp
+└── 你的角色/
+    ├── pet.json
+    └── spritesheet.webp
+```
+
+应用首次运行时会把内置宠物复制到这里一次。之后你可以自由删除；被删除的内置宠物不会在每次重启时自动恢复。
+
+### 导入网站下载的宠物
+
+如果下载的是 ZIP：
+
+1. 先解压 ZIP。
+2. 确认解压后的角色文件夹中直接包含 `pet.json` 和 `spritesheet.webp`。
+3. 把整个角色文件夹复制到“管理宠物”打开的目录。
+4. 回到宠物选择窗口；窗口重新获得焦点时会刷新资源。必要时关闭并重新打开选择窗口。
+
+不要把 ZIP 文件本身直接放进宠物目录。
+
+### 导入 Codex 自定义宠物
+
+Codex 创建的宠物通常位于：
+
+```text
+~/.codex/pets/<pet-id>/
+```
+
+把其中完整的角色文件夹复制到本项目“管理宠物”打开的目录即可。两者使用相同的 `8 × 9` 图集协议和 manifest 基本格式。
+
+### 删除宠物
+
+在“管理宠物”打开的目录中删除对应角色文件夹，然后回到选择窗口刷新即可。如果删除的是当前角色，应用会自动切换到仍然可用的宠物。
+
+## 自定义角色名称、Tag 和台词
+
+所有可编辑内容都在角色文件夹的 `pet.json` 中。可以使用文本编辑器打开，例如 VS Code、记事本或文本编辑。
+
+### 完整示例
+
+```json
+{
+  "id": "my-pet-stable-id",
+  "displayName": "我的角色",
+  "description": "一个陪伴在桌面的自定义角色。",
+  "spritesheetPath": "spritesheet.webp",
+  "author": "你的名字",
+  "version": "1.0.0",
+  "tags": ["自定义", "玩家", "可爱"],
+  "faction": "七秀",
+  "recommendedScale": 1,
+  "accentColor": "#10a37f",
+  "bubbleLines": {
+    "welcome": [
+      "我来啦，今天也一起加油。",
+      "桌面伙伴已就位。"
+    ],
+    "click": [
+      "我在呢。",
+      "轻一点，会痒。"
+    ],
+    "drag": [
+      "慢一点，我跟上。",
+      "要搬去哪里？"
+    ],
+    "petSwitch": [
+      "换好啦，这次由我陪你。",
+      "交接完成，我来接班。"
+    ]
+  }
+}
+```
+
+### 字段说明
+
+| 字段 | 是否必填 | 说明 |
+| --- | --- | --- |
+| `id` | 是 | 稳定且唯一的资源 ID。建立后不要随意修改 |
+| `displayName` | 是 | 选择器显示的中文角色名称 |
+| `spritesheetPath` | 是 | 图集文件相对路径，通常为 `spritesheet.webp` |
+| `description` | 否 | 角色说明 |
+| `author` | 否 | 作者名称 |
+| `version` | 否 | 资源版本 |
+| `tags` | 否 | 非空字符串数组，例如 `["玩家", "七秀"]` |
+| `faction` | 否 | 门派或阵营 |
+| `recommendedScale` | 否 | 建议缩放，允许 `0.5` 到 `2` |
+| `accentColor` | 否 | `#rgb` 或 `#rrggbb` 颜色值 |
+| `bubbleLines` | 否 | 四类可编辑气泡台词 |
+
+### 气泡场景
+
+| 键名 | 触发时机 |
+| --- | --- |
+| `welcome` | 桌宠首次就绪 |
+| `click` | 单击角色且没有发生拖拽 |
+| `drag` | 完成一次真实拖拽 |
+| `petSwitch` | 确认切换到该角色 |
+
+每个场景必须是字符串数组，可以写 1–3 句。应用会从可用句子中选择。不要写成单个字符串：
+
+```json
+"click": ["正确写法"]
+```
+
+```json
+"click": "错误写法"
+```
+
+保存后回到选择窗口触发刷新，或重启桌宠。角色 JSON 中的 `bubbleLines` 优先级最高；缺少某个场景时才使用应用内置回退。
+
+### 文件夹名称
+
+应用会根据 `displayName` 把宠物文件夹整理为角色名称，例如：
+
+```text
+displayName: "阿史那承庆" → 文件夹: 阿史那承庆/
+displayName: "七秀"       → 文件夹: 七秀/
+```
+
+`/`、`:` 等不适合作为文件名的字符会被替换。同名目录发生冲突时，应用不会覆盖已有资源。
+
+## 动画图集规范
+
+图集固定为 `1536 × 1872`、透明背景、`8 列 × 9 行`，每格 `192 × 208`。
+
+| 行 | 动作 | 使用帧 |
+| ---: | --- | ---: |
+| 0 | `idle` | 6 |
+| 1 | `running-right` | 8 |
+| 2 | `running-left` | 8 |
+| 3 | `waving` | 4 |
+| 4 | `jumping` | 5 |
+| 5 | `failed` | 8 |
+| 6 | `waiting` | 6 |
+| 7 | `running` | 6 |
+| 8 | `review` | 6 |
+
+当前桌宠直接使用 `idle`、`running-right`、`running-left`、`waving` 和 `jumping`。其余行保留 Codex 资源兼容性。每行未使用的格子必须完全透明。
+
+## 开发者运行
+
+环境要求：Node.js 20 或更高版本。
 
 ```sh
 npm install
 npm run dev
 ```
 
-The app opens a transparent always-on-top window and starts a local state API:
+常用命令：
 
-```sh
-curl -X POST http://127.0.0.1:7777/state \
-  -H 'content-type: application/json' \
-  -d '{"state":"waving","durationMs":1800}'
-```
+| 命令 | 用途 |
+| --- | --- |
+| `npm run build` | TypeScript 检查并构建 renderer |
+| `npm run pet:check` | 检查项目内置宠物资源 |
+| `npm run pet:embed-bubbles` | 把内置回退台词写入项目宠物 manifest |
+| `npm run test:pet-library` | 验证统一宠物目录初始化和命名 |
+| `npm run test:pet-state-machine` | 验证交互状态与左右拖拽 |
+| `npm run test:bubbles` | 验证角色 JSON 台词优先级 |
+| `npm run preflight` | 运行测试、资源检查和构建 |
+| `npm run smoke:electron` | 真实 Electron 双窗口冒烟测试 |
+| `npm run release:gate` | 预检、macOS/Windows 打包和产物验收 |
 
-Shortcuts:
-
-```sh
-npm run pet:wave
-npm run pet:jump
-npm run pet:run
-npm run pet:wait
-npm run pet:observe
-npm run pet:fail
-npm run pet:idle
-```
-
-Interactions mirror the Codex overlay pattern:
-
-- Drag the pet body to move the floating window.
-- The animation switches to left/right running while dragging.
-- Release after a fast drag to let the pet glide with inertia.
-- Click without moving to wave.
-- Drag the bottom-right handle to resize the pet.
-- Right-click the pet to open the native context menu.
-- Hover over the pet to show the small control bar.
-- Use the control bar settings popover to toggle speech bubbles, proactive reminders, or enter/leave sleep mode.
-- Open the pet picker to import compatible pets from the local Codex pet store into this project's `pets/` folder.
-- Transparent pixels pass through to the desktop; only visible pet pixels capture clicks.
-- Window edge constraints use the pet's visible alpha bounds, so dragging to the screen edge hugs the character rather than the transparent atlas cell.
-
-Idle animation uses the Codex timing model: the idle row frame durations are multiplied by 6. Left/right running loops continuously while dragging; other action rows play at their normal frame durations before returning to idle.
-
-## Behavior Model
-
-State changes flow through a small behavior controller in the Electron main process. It gives actions priority, applies a short cooldown to repeated one-shot actions, queues lower-priority actions when another action is already playing, and returns to `idle` when timed actions finish.
-
-P2 adds a renderer-side lifestyle rule layer for ordinary desktop use. It does not read Codex, Claude, agent, task queue, or external work status. Local UI and time events map to a lifestyle decision first, then optionally trigger a state and a speech bubble.
-
-P2.5 adds a small renderer-side behavior queue between lifestyle decisions and playback. Direct user actions can interrupt lower-priority proactive prompts, import and pet-switch feedback is preserved as important feedback, and repeated welcome/idle prompts are merged so bubbles and short animations do not overwrite each other during quick clicks, drags, imports, or picker activity. Sleep mode and the proactive-reminder toggle still use the P2 helper gate; the queue does not introduce Codex, Claude, agent, or task-status integration.
-
-P2.6 adds a read-only project pet health check for packaging. It scans only this project's `desktop-pet-mvp/pets/` directory and reports broken manifests, unsafe spritesheet paths, duplicate manifest ids, copied folder suffixes, and stale `.importing-*` staging directories before resources are bundled.
-
-P2.7 adds a one-command packaging preflight. `npm run package:check` verifies that electron-builder is configured to include the runtime resources (`dist/**/*`, `electron/**/*`, `pets/**/*`, `public/**/*`, and `package.json`) and reuses the project-local pet health check. It does not run electron-builder, create installers, or write `release/` artifacts. `npm run preflight` runs the behavior, import, management, pet health, package health, package, and build checks in order and stops on the first failure.
-
-P2.8 adds real packaged artifact verification. After `npm run dist:all` creates `release/`, `npm run package:verify` reads the generated macOS and Windows `app.asar` files, verifies packaged `/pets` manifests and spritesheets against the project-local `pets/` health result, and rejects duplicate copy folders, `.importing-*` staging content, or test/temporary pet materials. It is read-only and does not generate installers.
-
-P2.9/P4.0 define the first publishable release gate: `npm run preflight`, clean only `desktop-pet-mvp/release`, run `npm run dist:all`, run `npm run package:verify`, then complete the manual smoke checklist in `docs/release-smoke.md`.
-
-The user-facing state semantics are:
+## 项目结构
 
 ```text
-dragging          -> running-left / running-right
-click / wake      -> waving
-pet switched      -> jumping
-busy burst        -> running
-idle rest         -> waiting
-curious peek      -> observation row
-error             -> failed
-settled           -> idle
+desktop-pet-mvp/
+├── electron/   Electron 主进程、窗口、IPC、统一宠物库和安全边界
+├── src/        React 桌宠、选择器、动画、气泡和样式
+├── pets/       随安装包提供的初始内置宠物种子
+├── scripts/    资源检查、台词迁移、预检和发布门禁
+├── tests/      状态机、资源、窗口、安全和 Electron 冒烟测试
+└── docs/       架构决策、manifest 和发布说明
 ```
 
-The atlas still keeps its original internal state keys, including `review` for row 8, but visible copy labels that row as observation, peeking, or curiosity. Looping states such as `waiting`, the observation row, and `running` can stay active until another higher/equal priority action or `idle` replaces them. Timed states such as `waving`, `jumping`, and `failed` automatically return to `idle`.
+进一步资料：
 
-The interaction mode button cycles through 清静 / 日常 / 活泼 / 睡觉 and persists the current mode. The settings popover also persists size, opacity, always-on-top, launch-at-login, speech bubbles, and proactive reminders. Electron stores settings in the app `userData` folder as `desktop-pet-settings.json` with this shape:
+- [项目结构](docs/project-structure.md)
+- [宠物 manifest](docs/manifest-v1.md)
+- [气泡文案指南](docs/speech-bubble-copy-guide.md)
+- [发布验证](docs/release-smoke.md)
 
-```json
-{
-  "interactionMode": "standard",
-  "mascotWidthPx": 120,
-  "opacity": 1,
-  "alwaysOnTopEnabled": true,
-  "launchAtLoginEnabled": false,
-  "speechBubblesEnabled": true,
-  "proactiveEventsEnabled": true
-}
-```
+## 发布说明
 
-Missing, damaged, or unsupported values safely fall back to defaults so the pet can still start. Standalone browser previews use the local state API when available and fall back to `localStorage` with the same setting shape.
-
-For a visible debug window:
-
-```sh
-DESKTOP_PET_DEBUG=1 npm run dev
-```
-
-## Project Structure
-
-```text
-electron/
-  main.mjs       Electron 主进程：透明窗口、拖拽惯性、点击穿透、宠物扫描、IPC
-  package-health.mjs 打包前配置核验：electron-builder build.files 和本地 pets 健康
-  package-verify.mjs 打包后产物验收：读取 release 内 app.asar 并核验 pets 资源
-  pet-health.mjs 打包前项目本地 pets 资源健康检查：manifest、spritesheet、安全路径、重复项
-  pet-importer.mjs 显式 Codex 宠物导入桥：校验、复制、不覆盖本地资源
-  pet-manifest.mjs manifest v1 必需/可选字段归一化
-  pet-management.mjs 本地宠物管理：识别导入标记、保护内置资源、删除项目本地导入目录
-  settings-store.mjs 轻量设置存储：大小、透明度、置顶、自启、互动模式等 JSON 持久化
-  preload.mjs    安全暴露给渲染层的 desktopPet API
-src/
-  App.tsx        桌宠渲染、拖拽/缩放/切换器交互、alpha 命中检测
-  behavior/      P2 生活行为规则层：事件、互动模式、门派 profile、决策和 renderer 行为队列
-  petAnimation.ts Codex-compatible atlas 动画时序
-  styles.css     透明覆盖层、角色、切换器 UI
-pets/            项目内置宠物包，运行时只从这里加载
-scripts/         本地状态控制脚本
-docs/            设计记录和工作日志
-```
-
-## Development Workflow
-
-```sh
-npm run test:settings
-npm run test:behavior
-npm run test:behavior-queue
-npm run test:pet-import
-npm run test:pet-management
-npm run test:pet-health
-npm run test:package-health
-npm run test:package-verify
-npm run pet:check
-npm run package:check
-npm run build
-git status --short
-```
-
-提交前建议至少跑一次 `npm run test:settings`、`npm run test:behavior`、`npm run test:behavior-queue`、`npm run test:pet-import`、`npm run test:pet-management`、`npm run test:pet-health`、`npm run test:package-health`、`npm run test:package-verify` 和 `npm run build`。发布前可直接运行 `npm run preflight` 串起主要检查。打包前也可单独运行 `npm run pet:check` 和 `npm run package:check`；其中 `package:check` 只做 electron-builder 资源配置与本地宠物资源核验，不会生成安装包或 release 产物。构建会执行 TypeScript 类型检查和 Vite 构建。运行中的开发服务会生成 `dist/`，该目录不进入 git。
-
-## Release Workflow
-
-First publishable build gate:
-
-```sh
-npm run preflight
-rm -rf release
-npm run dist:all
-npm run package:verify
-```
-
-`preflight` runs tests, resource checks, package config checks, and a production build; it does not create installers. `dist:all` runs electron-builder and writes generated macOS/Windows artifacts into `desktop-pet-mvp/release`. `package:verify` is read-only: it inspects the generated `app.asar` files under `release/` and compares packaged pets against the local project `pets/` manifests. After the commands pass, finish the manual Electron checklist in `docs/release-smoke.md`.
-
-## Pet Folders
-
-The app scans the project-local pet folder:
-
-```text
-./pets/
-```
-
-Before packaging, run the read-only health check:
-
-```sh
-npm run pet:check
-npm run package:check
-npm run package:verify
-```
-
-`pet:check` only scans `desktop-pet-mvp/pets/`. It does not read, modify, delete, or sync anything under `~/.codex/pets`. `package:check` wraps that same local pet health check and verifies the electron-builder `build.files` resource allowlist; it is also read-only and does not run electron-builder. `package:verify` requires an existing `release/` from `npm run dist:all`; it reads generated `app.asar` files and fails if packaged pet manifests, spritesheets, duplicate/staging folders, or test materials do not match the local release gate.
-
-Each pet is:
-
-```text
-pet.json
-spritesheet.webp | spritesheet.png | spritesheet.svg
-```
-
-Manifest v1 keeps `id`, `displayName`, and `spritesheetPath` as required fields. Optional metadata fields are `author`, `version`, `tags`, `faction`, `recommendedScale`, `accentColor`, and `behaviorProfile`; old manifests without them still load. Invalid optional fields are ignored by the runtime and reported as warnings by `npm run pet:check`. See `docs/manifest-v1.md`.
-
-The picker can explicitly import compatible Codex pets from:
-
-```text
-~/.codex/pets/<pet-id>/
-```
-
-Importing copies a valid pet directory into `./pets/<pet-id>/`, refreshes the local pet list, and selects the imported pet. It is not a background sync process: the app does not watch `~/.codex/pets`, does not modify that external directory, and does not overwrite an existing local `./pets/<pet-id>/` folder. A Codex pet whose manifest id already exists locally is treated as already installed so duplicate copies such as `_副本` do not enter the project pet set.
-
-Imported pets receive a lightweight `desktopPetMvp` marker in `pet.json`. The picker can delete only locally imported pets with that marker, and deletion only removes `./pets/<folder>/`. Built-in pets and any older local pets without a reliable imported marker stay protected by default.
-
-The preferred Codex-compatible atlas is:
-
-```text
-1536 x 1872
-8 columns x 9 rows
-192 x 208 per frame
-transparent background
-```
-
-## States
-
-The renderer follows the Codex row map:
-
-```text
-0 idle
-1 running-right
-2 running-left
-3 waving
-4 jumping
-5 failed
-6 waiting
-7 running
-8 observation row (internal key: review)
-```
+- `dist/`、`release/`、日志和用户数据目录不进入 Git。
+- `release:gate` 只清理本仓库的 `release/` 后重新打包。
+- 当前 macOS 构建未配置签名与公证，不应直接视为正式商店发行包。
+- 导入第三方角色资源时，请自行确认版权和再分发权限。

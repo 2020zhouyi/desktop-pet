@@ -1,6 +1,20 @@
 {
   "id": "jx3-u7eaf-u9633-01",
-  "displayName": "\u7eaf\u9633 Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u7eaf\u9633, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "纯阳",
+  "description": "A compact Codex-style chibi version of JX3 纯阳, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "气场已开，咩咩归位。"
+    ],
+    "click": [
+      "贫道在挂机，气场别乱点。"
+    ],
+    "drag": [
+      "生太极被你拖歪了。"
+    ],
+    "petSwitch": [
+      "气场交接，稳住。"
+    ]
+  }
 }

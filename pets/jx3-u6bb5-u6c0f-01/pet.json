@@ -1,6 +1,20 @@
 {
   "id": "jx3-u6bb5-u6c0f-01",
-  "displayName": "\u6bb5\u6c0f Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u6bb5\u6c0f, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "段氏",
+  "description": "A compact Codex-style chibi version of JX3 段氏, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "周天一转，扇风到桌面。"
+    ],
+    "click": [
+      "别点，我在算一阳指距离。"
+    ],
+    "drag": [
+      "扇面乱了，把我放回风里。"
+    ],
+    "petSwitch": [
+      "换好啦，我来接班。"
+    ]
+  }
 }

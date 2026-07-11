@@ -1,6 +1,20 @@
 {
   "id": "jx3-u51cc-u96ea-u9601-01",
-  "displayName": "\u51cc\u96ea\u9601 Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u51cc\u96ea\u9601, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "凌雪阁",
+  "description": "A compact Codex-style chibi version of JX3 凌雪阁, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "我在，别声张。"
+    ],
+    "click": [
+      "别点，位置暴露了。"
+    ],
+    "drag": [
+      "放手，我要回雪影里。"
+    ],
+    "petSwitch": [
+      "交接无声，已到位。"
+    ]
+  }
 }

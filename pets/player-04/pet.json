@@ -1,0 +1,28 @@
+{
+  "id": "player-04",
+  "displayName": "采风",
+  "description": "A Codex digital pet inspired by the Jian Wang 3 Wudu female character in the provided reference, preserving her white hair, flower crown, purple-black outfit, silver ornaments, branch staff, orange bells, and tiny purple winged companion.",
+  "spritesheetPath": "spritesheet.webp",
+  "faction": "玩家",
+  "tags": [
+    "player"
+  ],
+  "bubbleLines": {
+    "welcome": [
+      "花冠轻响，采风到啦。",
+      "小翼灵跟着我来了。"
+    ],
+    "click": [
+      "别碰铃铛，会响。",
+      "小翼灵说它听见了。"
+    ],
+    "drag": [
+      "花冠要歪啦，慢点。",
+      "枝杖会晃，轻些。"
+    ],
+    "petSwitch": [
+      "采风接班，铃声到位。",
+      "换我守桌，小翼灵也在。"
+    ]
+  }
+}

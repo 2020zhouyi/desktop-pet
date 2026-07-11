@@ -1,6 +1,20 @@
 {
   "id": "jx3-u4e10-u5e2e-01",
-  "displayName": "\u4e10\u5e2e Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u4e10\u5e2e, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "丐帮",
+  "description": "A compact Codex-style chibi version of JX3 丐帮, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "君山开张，先来一口。"
+    ],
+    "click": [
+      "轻点，我差一掌亢龙。"
+    ],
+    "drag": [
+      "打狗棒不包邮，慢点搬。"
+    ],
+    "petSwitch": [
+      "换人看摊，江湖继续。"
+    ]
+  }
 }

@@ -1,6 +1,20 @@
 {
   "id": "jx3-u4e03-u79c0-01",
-  "displayName": "\u4e03\u79c0 Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u4e03\u79c0, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "七秀",
+  "description": "A compact Codex-style chibi version of JX3 七秀, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "水袖一转，花瓣就位。"
+    ],
+    "click": [
+      "别碰发型，也别乱点剑舞。"
+    ],
+    "drag": [
+      "水袖要打结了，慢一点。"
+    ],
+    "petSwitch": [
+      "换装完成，花瓣接力。"
+    ]
+  }
 }

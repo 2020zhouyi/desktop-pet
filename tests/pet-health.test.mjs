@@ -61,6 +61,17 @@ try {
     },
     spritesheetPath: "spritesheet.webp",
   });
+  await writePet(petsRoot, "unexpected-file", {
+    manifest: {
+      id: "unexpected-file",
+      displayName: "Unexpected File",
+      spritesheetPath: "spritesheet.webp",
+    },
+    spritesheetPath: "spritesheet.webp",
+    extraFiles: {
+      "notes.txt": "do not package me",
+    },
+  });
   await mkdir(path.join(petsRoot, "missing-manifest"), { recursive: true });
   await mkdir(path.join(petsRoot, "invalid-json"), { recursive: true });
   await writeFile(path.join(petsRoot, "invalid-json", "pet.json"), "{not json", "utf8");
@@ -151,7 +162,7 @@ try {
   assert.equal(result.ok, false);
   assert.ok(result.errorCount >= 10, "expected all invalid fixtures to be errors");
   assert.equal(result.warningCount, 9);
-  assert.equal(result.scannedPetCount, 16);
+  assert.equal(result.scannedPetCount, 17);
   assert.equal(findIssue(result, "missing_manifest", "missing-manifest").severity, "error");
   assert.equal(findIssue(result, "invalid_json", "invalid-json").severity, "error");
   assertRequiredField(result, "missing-id", "id");
@@ -188,6 +199,15 @@ try {
   );
   assert.equal(findIssue(result, "spritesheet_missing", "good-pet"), undefined);
   assert.equal(findIssue(result, "unsafe_spritesheet_path", "nested-good"), undefined);
+  assert.equal(findIssue(result, "unexpected_pet_file", "nested-good"), undefined);
+  assert.equal(
+    findIssue(result, "unexpected_pet_file", "unexpected-file").filePath,
+    "notes.txt",
+  );
+  assert.equal(
+    findIssue(result, "too_many_pet_files", "unexpected-file").fileCount,
+    3,
+  );
   assert.equal(findIssue(result, "invalid_optional_manifest_field", "nested-good"), undefined);
   assertOptionalFieldWarning(result, "invalid-optional-fields", "author");
   assertOptionalFieldWarning(result, "invalid-optional-fields", "version");
@@ -230,7 +250,7 @@ try {
   await rm(tempDir, { recursive: true, force: true });
 }
 
-async function writePet(root, folderName, { manifest, spritesheetPath }) {
+async function writePet(root, folderName, { manifest, spritesheetPath, extraFiles = {} }) {
   const dir = path.join(root, folderName);
   await mkdir(dir, { recursive: true });
   await writeFile(path.join(dir, "pet.json"), JSON.stringify(manifest), "utf8");
@@ -238,6 +258,11 @@ async function writePet(root, folderName, { manifest, spritesheetPath }) {
     const spriteFile = path.join(dir, ...spritesheetPath.split("/"));
     await mkdir(path.dirname(spriteFile), { recursive: true });
     await writeFile(spriteFile, `sprite:${folderName}`, "utf8");
+  }
+  for (const [relativePath, content] of Object.entries(extraFiles)) {
+    const filePath = path.join(dir, ...relativePath.split("/"));
+    await mkdir(path.dirname(filePath), { recursive: true });
+    await writeFile(filePath, content, "utf8");
   }
 }
 

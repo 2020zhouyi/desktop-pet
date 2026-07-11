@@ -1,6 +1,20 @@
 {
   "id": "jx3-u5929-u7b56-01",
-  "displayName": "\u5929\u7b56 Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u5929\u7b56, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "天策",
+  "description": "A compact Codex-style chibi version of JX3 天策, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "整队！桌面巡防开始。"
+    ],
+    "click": [
+      "将令何在？没有就别戳。"
+    ],
+    "drag": [
+      "被拖也要保持队形，汪。"
+    ],
+    "petSwitch": [
+      "换好啦，我来接班。"
+    ]
+  }
 }

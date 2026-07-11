@@ -1,6 +1,20 @@
 {
   "id": "jx3-u4e07-u82b1-01",
-  "displayName": "\u4e07\u82b1 Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u4e07\u82b1, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "万花",
+  "description": "A compact Codex-style chibi version of JX3 万花, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "问诊开始，毛笔归位。"
+    ],
+    "click": [
+      "别乱动，针会扎歪。"
+    ],
+    "drag": [
+      "病历本散了，盆栽也倒了。"
+    ],
+    "petSwitch": [
+      "病历交接，换我来看。"
+    ]
+  }
 }

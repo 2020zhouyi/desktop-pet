@@ -1,6 +1,20 @@
 {
   "id": "jx3-u5317-u5929-u836f-u5b97-01",
-  "displayName": "\u5317\u5929\u836f\u5b97 Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u5317\u5929\u836f\u5b97, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "北天药宗",
+  "description": "A compact Codex-style chibi version of JX3 北天药宗, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "百草卷开，先看气色。"
+    ],
+    "click": [
+      "别急，药性还没中和。"
+    ],
+    "drag": [
+      "药箱会晃，慢点搬。"
+    ],
+    "petSwitch": [
+      "药箱收好，换我来守。"
+    ]
+  }
 }

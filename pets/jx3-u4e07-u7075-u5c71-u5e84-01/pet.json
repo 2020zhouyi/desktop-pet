@@ -1,6 +1,20 @@
 {
   "id": "jx3-u4e07-u7075-u5c71-u5e84-01",
-  "displayName": "\u4e07\u7075\u5c71\u5e84 Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u4e07\u7075\u5c71\u5e84, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "万灵山庄",
+  "description": "A compact Codex-style chibi version of JX3 万灵山庄, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "乘黄到位，百兽也点名了。"
+    ],
+    "click": [
+      "轻点，它以为要出发。"
+    ],
+    "drag": [
+      "别拽，乘黄已经跟上来了。"
+    ],
+    "petSwitch": [
+      "换好啦，我来接班。"
+    ]
+  }
 }

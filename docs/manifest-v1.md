@@ -1,49 +1,72 @@
 # Pet Manifest v1
 
-`pet.json` stays small and backward compatible. Existing manifests with only the required fields continue to load.
-
-## Required Fields
+每个宠物文件夹包含 `pet.json` 和一张 spritesheet。最小 manifest：
 
 ```json
 {
-  "id": "jx3-u4e03-u79c0-01",
-  "displayName": "七秀 Codex Pet 1",
+  "id": "jx3-qixiu-01",
+  "displayName": "七秀",
   "spritesheetPath": "spritesheet.webp"
 }
 ```
 
-- `id`: non-empty string. Used for duplicate detection during import and health checks.
-- `displayName`: non-empty string shown in the picker and control bar.
-- `spritesheetPath`: safe relative path inside the pet folder. Absolute paths, empty path parts, and `..` traversal are rejected.
+## 必填字段
 
-## Optional Fields
+- `id`：非空、稳定、唯一。运行时选择记录使用该 ID，不依赖文件夹名称。
+- `displayName`：选择器显示的角色名称，也用于整理用户宠物文件夹名称。
+- `spritesheetPath`：宠物文件夹内的安全相对路径；拒绝绝对路径和 `..` 穿越。
+
+## 可选字段
 
 ```json
 {
-  "author": "Pi Team",
+  "description": "角色说明",
+  "author": "作者",
   "version": "1.0.0",
-  "tags": ["jx3", "qixiu"],
+  "tags": ["jx3", "七秀"],
   "faction": "七秀",
   "recommendedScale": 1.15,
-  "accentColor": "#217d74",
-  "behaviorProfile": "watchful"
+  "accentColor": "#10a37f",
+  "behaviorProfile": "watchful",
+  "bubbleLines": {
+    "welcome": ["我来啦。"],
+    "click": ["我在。"],
+    "drag": ["慢点搬。"],
+    "petSwitch": ["换我接班。"]
+  }
 }
 ```
 
-- `author`, `version`, `faction`, `behaviorProfile`: non-empty strings.
-- `tags`: array of non-empty strings.
-- `recommendedScale`: number from `0.5` to `2`, displayed as a picker hint.
-- `accentColor`: `#rgb` or `#rrggbb`, displayed as a small picker swatch.
+- 字符串元数据必须非空。
+- `tags` 必须是非空字符串数组。
+- `recommendedScale` 范围为 `0.5` 到 `2`。
+- `accentColor` 接受 `#rgb` 或 `#rrggbb`。
+- `bubbleLines` 只接受 `welcome`、`click`、`drag`、`petSwitch`；每项是至少包含一个非空字符串的数组。
 
-The loader and importer ignore invalid optional fields. `npm run pet:check` reports invalid optional fields as warnings, not errors, so metadata cleanup does not block old or otherwise healthy pets.
+角色 manifest 的 `bubbleLines` 优先于源码内置回退，因此普通玩家可以直接编辑用户宠物目录中的 JSON，无需重新构建应用。
 
-## Runtime Consumers
+## 资源边界
 
-- Loader: normalizes required fields before a pet can appear in the picker or render as the active desktop pet.
-- Importer: validates external Codex pet folders before copying them into this project's `pets/` directory.
-- Health check: reports manifest errors/warnings before packaging.
-- Package verifier: compares packaged pet resources against the project-local manifest set after `npm run dist:all`.
+每个宠物目录只允许：
 
-## Import Boundary
+```text
+pet.json
+<spritesheetPath>
+```
 
-Codex pet imports copy from `~/.codex/pets/<pet-id>/` into this project's `pets/<pet-id>/`. Import does not watch, delete, move, or modify `~/.codex/pets`.
+图集固定为透明 `1536 × 1872` 的 `8 × 9` atlas，每格 `192 × 208`。额外文件、符号链接、重复 ID、危险路径和过大资源会被健康检查拒绝。
+
+## 两级目录
+
+- `./pets/`：随安装包发布的初始种子资源，只用于首次初始化与打包校验。
+- Electron `userData/pets/`：运行时唯一宠物库，内置和自定义宠物都在这里由用户管理。
+
+首次运行只复制一次内置种子。之后用户删除的文件夹不会自动恢复。运行时根据 manifest `id` 识别宠物，根据 `displayName` 整理文件夹名称。
+
+验证：
+
+```sh
+npm run pet:check
+npm run test:pet-library
+npm run test:bubbles
+```

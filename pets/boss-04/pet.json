@@ -1,0 +1,28 @@
+{
+  "id": "boss-04",
+  "displayName": "笑妆娘",
+  "description": "A compact Codex-style chibi version of JX3 笑妆娘, preserving the official character silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "faction": "Boss",
+  "tags": [
+    "boss"
+  ],
+  "bubbleLines": {
+    "welcome": [
+      "妆匣开一缝，红绸醒了。",
+      "张宿灯落，妆影回桌。"
+    ],
+    "click": [
+      "别碰眉心，会散。",
+      "轻些，簪花怕惊。"
+    ],
+    "drag": [
+      "裙角沾雪了，慢些。",
+      "红绸被你牵疼了。"
+    ],
+    "petSwitch": [
+      "妆匣换场，我来守灯。",
+      "红绸落下，轮到我了。"
+    ]
+  }
+}

@@ -1,6 +1,20 @@
 {
   "id": "jx3-u5c11-u6797-01",
-  "displayName": "\u5c11\u6797 Codex Pet 1",
-  "description": "A compact Codex-style chibi version of JX3 \u5c11\u6797, preserving the official sect silhouette, outfit colors, and signature accessories.",
-  "spritesheetPath": "spritesheet.webp"
+  "displayName": "少林",
+  "description": "A compact Codex-style chibi version of JX3 少林, preserving the official sect silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "bubbleLines": {
+    "welcome": [
+      "阿弥陀佛，桌面安稳。"
+    ],
+    "click": [
+      "施主，手速很急。"
+    ],
+    "drag": [
+      "坐垫被拖走，小灯泡也晃了。"
+    ],
+    "petSwitch": [
+      "换好啦，我来接班。"
+    ]
+  }
 }

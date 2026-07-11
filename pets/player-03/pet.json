@@ -1,0 +1,28 @@
+{
+  "id": "player-03",
+  "displayName": "盐皂",
+  "description": "A compact Codex digital pet based on a Jian San Xiu Tai swordsman with calm, elegant, slightly cold presence.",
+  "spritesheetPath": "spritesheet.webp",
+  "faction": "玩家",
+  "tags": [
+    "player"
+  ],
+  "bubbleLines": {
+    "welcome": [
+      "盐皂收剑，安静到位。",
+      "小剑入鞘，今日开场。"
+    ],
+    "click": [
+      "别戳，剑穗会偏。",
+      "嗯，我听见了。"
+    ],
+    "drag": [
+      "袖口乱了，慢些。",
+      "别拎剑鞘，失礼。"
+    ],
+    "petSwitch": [
+      "盐皂接班，声音放轻。",
+      "我来了，桌面安静些。"
+    ]
+  }
+}

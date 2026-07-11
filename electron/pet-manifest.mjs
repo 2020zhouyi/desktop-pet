@@ -8,6 +8,7 @@ export const manifestOptionalFields = [
   "recommendedScale",
   "accentColor",
   "behaviorProfile",
+  "bubbleLines",
 ];
 
 const stringOptionalFields = new Set([
@@ -87,9 +88,24 @@ function normalizeOptionalManifestField(field, value) {
   }
 
   if (field === "tags") return normalizeTags(value);
+  if (field === "bubbleLines") return normalizeBubbleLines(value);
   if (field === "recommendedScale") return normalizeRecommendedScale(value);
   if (field === "accentColor") return normalizeAccentColor(value);
   return invalid();
+}
+
+function normalizeBubbleLines(value) {
+  if (!isPlainObject(value)) return invalid();
+  const scenes = ["welcome", "click", "drag", "petSwitch"];
+  const normalized = {};
+  for (const scene of scenes) {
+    if (!hasOwn(value, scene)) continue;
+    if (!Array.isArray(value[scene])) return invalid();
+    const lines = value[scene].map((line) => typeof line === "string" ? line.trim() : "");
+    if (lines.length === 0 || lines.some((line) => !line)) return invalid();
+    normalized[scene] = lines;
+  }
+  return valid(normalized);
 }
 
 function normalizeTags(value) {

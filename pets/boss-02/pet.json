@@ -1,0 +1,28 @@
+{
+  "id": "boss-02",
+  "displayName": "唐醉",
+  "description": "A compact Codex-style chibi version of JX3 唐醉, preserving the official character silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "faction": "Boss",
+  "tags": [
+    "boss"
+  ],
+  "bubbleLines": {
+    "welcome": [
+      "枯棠影落，三步留空。",
+      "袖风无声，暗匣已合。"
+    ],
+    "click": [
+      "指尖收回半寸。",
+      "别碰袖口。"
+    ],
+    "drag": [
+      "步距乱了。",
+      "别拉，我自己会退。"
+    ],
+    "petSwitch": [
+      "影位交给我。",
+      "枯棠接场，留三步。"
+    ]
+  }
+}

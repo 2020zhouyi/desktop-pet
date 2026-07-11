@@ -1,0 +1,28 @@
+{
+  "id": "player-02",
+  "displayName": "星河菜菜子",
+  "description": "A swan-princess inspired digital pet adapted from the provided white feather couture character reference.",
+  "spritesheetPath": "spritesheet.webp",
+  "faction": "玩家",
+  "tags": [
+    "player"
+  ],
+  "bubbleLines": {
+    "welcome": [
+      "白羽落桌，菜菜子到。",
+      "星河开伞，今日陪你。"
+    ],
+    "click": [
+      "别戳羽毛，会翘。",
+      "我在，羽尖听见了。"
+    ],
+    "drag": [
+      "裙摆要乱，慢点飞。",
+      "别拎羽翼，我会自己走。"
+    ],
+    "petSwitch": [
+      "菜菜子接班，羽毛到位。",
+      "换我来守这片星河。"
+    ]
+  }
+}

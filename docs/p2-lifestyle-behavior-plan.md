@@ -1,5 +1,11 @@
 # P2 剑三主题生活行为内核计划
 
+> [!WARNING]
+> **Status: Superseded / Historical**
+>
+> 本计划已由 [Desktop Pet MVP 精简开发计划](mvp-simplification-plan.md) 取代，不代表当前 runtime，也不得作为恢复旧功能的实现规格。
+> 以下正文仅保留为历史记录，内容不再维护。
+
 ## 目标
 
 P2 MVP 将桌宠从 agent 联动转成普通电脑用户可用的生活节奏编排。桌宠只响应本地 UI 交互和轻量时间事件，不读取 Codex、Claude、agent、任务队列或外部工作状态。

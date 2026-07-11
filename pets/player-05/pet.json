@@ -1,0 +1,28 @@
+{
+  "id": "player-05",
+  "displayName": "醋摆摆",
+  "description": "A tiny Codex pet inspired by a Jianwang 3 healer-scholar, carrying a brush pen weapon.",
+  "spritesheetPath": "spritesheet.webp",
+  "faction": "玩家",
+  "tags": [
+    "player"
+  ],
+  "bubbleLines": {
+    "welcome": [
+      "醋摆摆开卷，看你气色。",
+      "毛笔归位，今日问诊。"
+    ],
+    "click": [
+      "别戳，笔锋会歪。",
+      "嗯，记进病历了。"
+    ],
+    "drag": [
+      "病历散了，慢些搬。",
+      "笔洗会晃，轻一点。"
+    ],
+    "petSwitch": [
+      "醋摆摆接班，病历给我。",
+      "换我来看，先别紧张。"
+    ]
+  }
+}

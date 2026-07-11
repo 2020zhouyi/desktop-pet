@@ -1,0 +1,28 @@
+{
+  "id": "boss-05",
+  "displayName": "阿史那承庆",
+  "description": "A compact Codex-style chibi version of JX3 阿史那承庆, preserving the official character silhouette, outfit colors, and signature accessories.",
+  "spritesheetPath": "spritesheet.webp",
+  "faction": "Boss",
+  "tags": [
+    "boss"
+  ],
+  "bubbleLines": {
+    "welcome": [
+      "巨刃立桌，阵势开了。",
+      "风雪压帐，本将来巡。"
+    ],
+    "click": [
+      "敲甲作甚？传令？",
+      "有手劲，别浪费在戳上。"
+    ],
+    "drag": [
+      "拖我？先稳马步。",
+      "巨刃压地，慢些搬。"
+    ],
+    "petSwitch": [
+      "换将，阵旗归我。",
+      "本将接阵，无需多话。"
+    ]
+  }
+}

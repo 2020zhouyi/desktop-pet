@@ -36,11 +36,11 @@ export const stateFrames: Record<PetState, Frame[]> = {
   "running-left": frames(2, 8, 120, 220),
   waving: frames(3, 4, 140, 280),
   jumping: frames(4, 5, 140, 280),
-  failed: frames(5, 8, 140, 240),
-  waiting: frames(6, 6, 150, 260),
-  running: frames(7, 6, 120, 220),
-  review: frames(8, 6, 150, 280),
 };
+
+export function actionDurationMs(state: "waving" | "jumping"): number {
+  return stateFrames[state].reduce((total, frame) => total + frame.durationMs, 0) * 3;
+}
 
 export function backgroundPosition(frame: Frame): string {
   const x = (frame.column / (atlas.columns - 1)) * 100;
@@ -62,7 +62,7 @@ export function sequenceFor(state: PetState, reducedMotion: boolean): {
     };
   }
 
-  if (state === "running-left" || state === "running-right") {
+  if (state === "running-right" || state === "running-left") {
     return {
       frames: current,
       loopStartIndex: 0,
