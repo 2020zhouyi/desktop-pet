@@ -89,6 +89,67 @@
   white-space: nowrap;
 }
 
+.launch-at-login-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--picker-muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  -webkit-app-region: no-drag;
+}
+
+.launch-at-login-toggle input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.launch-at-login-toggle > span {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  border: 1px solid #cfcfcf;
+  border-radius: 999px;
+  background: #dedede;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.launch-at-login-toggle > span::after {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
+  content: "";
+  transition: transform 120ms ease;
+}
+
+.launch-at-login-toggle input:checked + span {
+  border-color: var(--picker-accent);
+  background: var(--picker-accent);
+}
+
+.launch-at-login-toggle input:checked + span::after {
+  transform: translateX(12px);
+}
+
+.launch-at-login-toggle input:focus-visible + span {
+  outline: 2px solid rgb(16 163 127 / 72%);
+  outline-offset: 2px;
+}
+
+.launch-at-login-toggle:has(input:disabled) {
+  cursor: wait;
+  opacity: 0.6;
+}
+
 .pet-library-button {
   display: inline-flex;
   align-items: center;

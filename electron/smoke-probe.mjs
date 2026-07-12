@@ -400,6 +400,7 @@ async function controlPickerSmokeProbe(targetPetId) {
     headingText: document.querySelector(".picker-title-block h1")?.textContent?.trim() ?? null,
     selectionDockRendered: document.querySelector(".picker-selection") !== null,
     libraryButtonRendered: document.querySelector("button.pet-library-button") !== null,
+    launchAtLoginRendered: document.querySelector("input[name=launch-at-login]") !== null,
     userPetCount: libraryPets.filter((pet) => pet.source === "user").length,
     settingsPanelAbsent: document.querySelector("#pet-settings-panel") === null,
     closeApiAvailable: true,

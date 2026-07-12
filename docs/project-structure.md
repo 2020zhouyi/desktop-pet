@@ -57,15 +57,17 @@ renderer 只通过 `preload.cjs` 暴露的受信 IPC 与主进程通信。surfac
 
 ## Selection Contract
 
-应用只持久化当前宠物 ID：
+应用持久化当前宠物 ID、桌宠宽度和开机自启选择：
 
 ```json
 {
-  "selectedPetId": "user:player-01"
+  "selectedPetId": "user:player-01",
+  "mascotWidthPx": 120,
+  "launchAtLogin": false
 }
 ```
 
-实现位于 `electron/pet-selection-store.mjs`。为迁移已有用户选择和尺寸，文件名仍使用 `desktop-pet-settings.json`；只读写 `selectedPetId` 与 `mascotWidthPx`，透明度、置顶等旧字段继续忽略。
+实现位于 `electron/pet-selection-store.mjs`。文件名继续使用 `desktop-pet-settings.json`；只读写 `selectedPetId`、`mascotWidthPx` 与 `launchAtLogin`，透明度、可变置顶等旧字段继续忽略。开机自启只通过 ControlWindow 的受限 IPC 修改，开发模式不注册系统登录项。
 
 ## Interaction Contract
 

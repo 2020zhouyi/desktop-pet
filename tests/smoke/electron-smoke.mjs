@@ -256,6 +256,7 @@ function assertControlMarker(marker, selectedPetId) {
   assert.equal(marker.control.picker.headingText, "选择桌宠");
   assert.equal(marker.control.picker.selectionDockRendered, true);
   assert.equal(marker.control.picker.libraryButtonRendered, true);
+  assert.equal(marker.control.picker.launchAtLoginRendered, true);
   assert.equal(marker.control.picker.userPetCount, 31);
   assert.equal(marker.control.picker.settingsPanelAbsent, true);
   assert.equal(marker.control.picker.closeApiAvailable, true);

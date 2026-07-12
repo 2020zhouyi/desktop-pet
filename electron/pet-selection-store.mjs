@@ -16,6 +16,9 @@ export function createPetSelectionStore(filePath) {
     readMascotWidth: () => pendingWrite.then(async () => (
       await readPetPreferences(filePath)
     ).mascotWidthPx),
+    readLaunchAtLogin: () => pendingWrite.then(async () => (
+      await readPetPreferences(filePath)
+    ).launchAtLogin),
     write: (selectedPetId) => {
       const result = pendingWrite.then(() => updateSelectedPetId(filePath, selectedPetId));
       pendingWrite = result.then(
@@ -32,6 +35,14 @@ export function createPetSelectionStore(filePath) {
       );
       return result;
     },
+    writeLaunchAtLogin: (launchAtLogin) => {
+      const result = pendingWrite.then(() => updateLaunchAtLogin(filePath, launchAtLogin));
+      pendingWrite = result.then(
+        () => undefined,
+        () => undefined,
+      );
+      return result;
+    },
   };
 }
 
@@ -41,9 +52,10 @@ async function readPetPreferences(filePath) {
     return {
       selectedPetId: normalizeSelectedPetId(value?.selectedPetId),
       mascotWidthPx: normalizeMascotWidth(value?.mascotWidthPx),
+      launchAtLogin: value?.launchAtLogin === true,
     };
   } catch {
-    return { selectedPetId: null, mascotWidthPx: null };
+    return { selectedPetId: null, mascotWidthPx: null, launchAtLogin: false };
   }
 }
 
@@ -65,11 +77,19 @@ async function updateMascotWidth(filePath, value) {
   return mascotWidthPx;
 }
 
+async function updateLaunchAtLogin(filePath, value) {
+  const current = await readPetPreferences(filePath);
+  const launchAtLogin = value === true;
+  await writePetPreferences(filePath, { ...current, launchAtLogin });
+  return launchAtLogin;
+}
+
 async function writePetPreferences(filePath, preferences) {
   await mkdir(path.dirname(filePath), { recursive: true });
   const serialized = {
     selectedPetId: preferences.selectedPetId,
     ...(preferences.mascotWidthPx === null ? {} : { mascotWidthPx: preferences.mascotWidthPx }),
+    launchAtLogin: preferences.launchAtLogin === true,
   };
   await writeFile(filePath, `${JSON.stringify(serialized, null, 2)}\n`, "utf8");
 }

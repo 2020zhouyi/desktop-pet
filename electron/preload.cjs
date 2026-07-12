@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld("desktopPet", {
   getPetPreview: (id) => ipcRenderer.invoke("pet:preview", id),
   selectPet: (id) => ipcRenderer.invoke("pet:select", id),
   openPetLibrary: () => ipcRenderer.invoke("pet:library-open"),
+  getLaunchAtLogin: () => ipcRenderer.invoke("app:launch-at-login-get"),
+  setLaunchAtLogin: (enabled) => ipcRenderer.invoke("app:launch-at-login-set", enabled),
   setState: (state, durationMs) =>
     ipcRenderer.invoke("pet:set-state", { state, durationMs }),
   startWindowDrag: (payload) => {

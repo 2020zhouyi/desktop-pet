@@ -39,6 +39,8 @@ export type DesktopPetApi = {
   getPetPreview(id: string): Promise<string | null>;
   selectPet(id: string): Promise<PetOption | null>;
   openPetLibrary(): Promise<string>;
+  getLaunchAtLogin(): Promise<boolean>;
+  setLaunchAtLogin(enabled: boolean): Promise<boolean>;
   setState(state: PetState, durationMs?: number): Promise<PetState>;
   startWindowDrag(payload: {
     pointerWindowX: number;

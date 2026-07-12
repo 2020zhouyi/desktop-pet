@@ -6,6 +6,8 @@ import { PetPicker } from "./PetPicker";
 export function ControlSurface() {
   const [status, setStatus] = useState<PetStatus>(localPreviewStatus);
   const [switchingPetId, setSwitchingPetId] = useState<string | null>(null);
+  const [launchAtLogin, setLaunchAtLoginState] = useState(false);
+  const [isUpdatingLaunchAtLogin, setUpdatingLaunchAtLogin] = useState(false);
 
   const closeControlSurface = useCallback(() => {
     void desktopPetApi.closeControlWindow();
@@ -17,6 +19,7 @@ export function ControlSurface() {
 
   useEffect(() => {
     void desktopPetApi.getStatus().then(setStatus);
+    void desktopPetApi.getLaunchAtLogin().then(setLaunchAtLoginState);
     return desktopPetApi.onStatusChanged(setStatus);
   }, []);
 
@@ -45,6 +48,15 @@ export function ControlSurface() {
     }
   };
 
+  const updateLaunchAtLogin = async (enabled: boolean) => {
+    setUpdatingLaunchAtLogin(true);
+    try {
+      setLaunchAtLoginState(await desktopPetApi.setLaunchAtLogin(enabled));
+    } finally {
+      setUpdatingLaunchAtLogin(false);
+    }
+  };
+
   return (
     <main className="stage">
       <section className="pet-shell" data-control-panel="picker">
@@ -54,6 +66,9 @@ export function ControlSurface() {
           switchingPetId={switchingPetId}
           onClose={closeControlSurface}
           onManageLibrary={openPetLibrary}
+          launchAtLogin={launchAtLogin}
+          isUpdatingLaunchAtLogin={isUpdatingLaunchAtLogin}
+          onLaunchAtLoginChange={(enabled) => void updateLaunchAtLogin(enabled)}
           onSelect={(id) => void selectPet(id)}
         />
       </section>

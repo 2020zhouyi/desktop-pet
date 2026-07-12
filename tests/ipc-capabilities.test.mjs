@@ -23,6 +23,8 @@ const controlOnlyChannels = [
   "pet:preview",
   "pet:select",
   "pet:library-open",
+  "app:launch-at-login-get",
+  "app:launch-at-login-set",
   "window:control-close",
 ];
 const allKnownChannels = [

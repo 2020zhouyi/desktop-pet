@@ -335,6 +335,18 @@ async function openPetLibrary() {
   return userPetsDir;
 }
 
+function applyLaunchAtLogin(enabled) {
+  if (!app.isPackaged) return;
+  app.setLoginItemSettings({ openAtLogin: enabled === true });
+}
+
+async function setLaunchAtLogin(enabled) {
+  const nextValue = enabled === true;
+  applyLaunchAtLogin(nextValue);
+  await activeSelectionStore.writeLaunchAtLogin(nextValue);
+  return nextValue;
+}
+
 function sortPetsForMvp(pets) {
   return [...pets].sort((left, right) => {
     const scoreDelta = petSortScore(left) - petSortScore(right);
@@ -501,6 +513,8 @@ function registerIpc(selectionStore) {
     return pet ? hydratePet(pet) : null;
   });
   handle("pet:library-open", () => openPetLibrary());
+  handle("app:launch-at-login-get", () => selectionStore.readLaunchAtLogin());
+  handle("app:launch-at-login-set", (enabled) => setLaunchAtLogin(enabled));
   handle("pet:set-state", (payload) =>
     setPetState(payload?.state, payload?.durationMs),
   );
@@ -881,6 +895,7 @@ app.whenReady().then(async () => {
   await normalizePetLibraryFolders(userPetsDir);
   const storedPetId = migrateSelectedPetId(await selectionStore.read());
   currentMascotWidth = await selectionStore.readMascotWidth() ?? defaultMascotWidth;
+  applyLaunchAtLogin(await selectionStore.readLaunchAtLogin());
   petState.selectedPetId = storedPetId;
   registerIpc(selectionStore);
   await loadPets().catch((error) => {

@@ -13,6 +13,9 @@ type PetPickerProps = {
   switchingPetId: string | null;
   onClose: () => void;
   onManageLibrary: () => void;
+  launchAtLogin: boolean;
+  isUpdatingLaunchAtLogin: boolean;
+  onLaunchAtLoginChange: (enabled: boolean) => void;
   onSelect: (id: string) => void;
 };
 
@@ -22,6 +25,9 @@ export function PetPicker({
   switchingPetId,
   onClose,
   onManageLibrary,
+  launchAtLogin,
+  isUpdatingLaunchAtLogin,
+  onLaunchAtLoginChange,
   onSelect,
 }: PetPickerProps) {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -145,6 +151,17 @@ export function PetPicker({
         </div>
         <div className="picker-header-actions">
           <span className="picker-total">{pets.length} 位伙伴</span>
+          <label className="launch-at-login-toggle">
+            <input
+              type="checkbox"
+              name="launch-at-login"
+              checked={launchAtLogin}
+              disabled={isUpdatingLaunchAtLogin}
+              onChange={(event) => onLaunchAtLoginChange(event.currentTarget.checked)}
+            />
+            <span aria-hidden="true" />
+            开机自启
+          </label>
           <button
             className="pet-library-button"
             type="button"

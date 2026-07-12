@@ -23,10 +23,14 @@ assert.match(mainSource, /transparent:\s*true/);
 assert.match(appSource, /className=["']resize-handle no-drag["']/);
 assert.match(preloadSource, /resizeMascot/);
 assert.match(preloadSource, /openPetLibrary/);
+assert.match(preloadSource, /getLaunchAtLogin/);
+assert.match(preloadSource, /setLaunchAtLogin/);
 assert.match(mainSource, /window:resize-mascot/);
 assert.match(mainSource, /pet:library-open/);
 assert.match(controlSource, /openPetLibrary/);
 assert.match(controlSource, /onManageLibrary/);
+assert.match(controlSource, /launchAtLogin/);
+assert.match(controlSource, /setLaunchAtLogin/);
 
 const controlWindowSource = mainSource.slice(
   mainSource.indexOf("async function openControlWindowNow"),

@@ -41,6 +41,12 @@ export const localPreviewApi: DesktopPetApi = {
   async openPetLibrary() {
     return "";
   },
+  async getLaunchAtLogin() {
+    return false;
+  },
+  async setLaunchAtLogin(enabled) {
+    return enabled;
+  },
   async setState(state: PetState, durationMs = 1800) {
     if (!petStates.includes(state)) {
       throw new Error(`Unsupported pet state: ${String(state)}`);
