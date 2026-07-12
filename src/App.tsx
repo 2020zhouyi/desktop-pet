@@ -380,12 +380,7 @@ function PetSurface() {
     if (dragEvent) void requestPetTransition(dragEvent);
     drag.screenX = event.screenX;
     drag.screenY = event.screenY;
-    void desktopPetApi.moveWindowDrag({
-      screenX: event.screenX,
-      screenY: event.screenY,
-      pointerWindowX: drag.pointerWindowX,
-      pointerWindowY: drag.pointerWindowY,
-    });
+    void desktopPetApi.moveWindowDrag();
   };
 
   const finishDrag = (event: ReactPointerEvent<HTMLElement>, shouldWave: boolean) => {

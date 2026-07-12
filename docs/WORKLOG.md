@@ -5,9 +5,16 @@
 - 桌宠 MVP 当前主线已经收敛为纯桌宠核心：透明 `PetWindow`、picker-only `ControlWindow`、sprite 渲染、四态直接交互、四类基础气泡和内置宠物选择器。
 - 运行时资源边界保持收紧：应用只读 `desktop-pet-mvp/pets/`；不扫描、不导入、不修改 `~/.codex/pets`，该目录也不参与打包。
 - 发布前闭环是 `npm run release:gate` -> `docs/release-smoke.md` 人工冒烟；其中 `release:gate` 串起 `preflight`、清理当前项目 `release/`、`dist:all` 和 `package:verify`。
-- 当前发布版本以 `package.json` 的 `0.1.1` 为唯一来源。
+- 当前发布版本以 `package.json` 的 `0.1.2` 为唯一来源。
 
 ## 2026-07-12
+
+### Windows 拖拽坐标收敛与角色精简
+
+- Windows 拖拽位置统一由主进程 `screen.getCursorScreenPoint()` 驱动，不再与 renderer 的 `event.screenX/Y` 混用，避免 DPI 缩放下左右或斜向累计漂移。
+- renderer 继续负责拖拽阈值、左右动画和点击判断，主进程成为窗口位置的唯一坐标真相。
+- 删除 `player-01` 至 `player-05` 五个玩家角色，内置资源从 30 个收敛为 25 个；统一用户宠物目录和手动删除管理方式保持不变。
+- 独立宠物缩略图列入后续性能优化；轻量安装包和空闲轮询调整暂不实施。
 
 ### Windows 首次显示与安装包修复
 

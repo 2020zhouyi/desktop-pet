@@ -14,8 +14,8 @@ contextBridge.exposeInMainWorld("desktopPet", {
     ipcRenderer.send("window:drag-start", payload);
     return Promise.resolve();
   },
-  moveWindowDrag: (payload) => {
-    ipcRenderer.send("window:drag-move", payload);
+  moveWindowDrag: () => {
+    ipcRenderer.send("window:drag-move");
     return Promise.resolve();
   },
   stopWindowDrag: () => {

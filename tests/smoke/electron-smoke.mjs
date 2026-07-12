@@ -29,13 +29,13 @@ try {
   const initialRun = startElectron("initial");
   electronRuns.push(initialRun);
   const initialMarker = await initialRun.marker;
-  const selectedPetId = assertInitialMarker(initialMarker);
+  const { selectedPetId, petCount } = assertInitialMarker(initialMarker);
   await stopProcess(initialRun.child);
 
   const restartRun = startElectron("restart");
   electronRuns.push(restartRun);
   const restartMarker = await restartRun.marker;
-  assertRestartMarker(restartMarker, selectedPetId);
+  assertRestartMarker(restartMarker, selectedPetId, petCount);
   await stopProcess(restartRun.child);
 
   console.log(`${smokeMode} electron smoke tests passed`);
@@ -200,11 +200,14 @@ function assertInitialMarker(marker) {
   assert.equal(marker.selection.cardClicked, true);
   assert.equal(marker.selection.confirmClicked, true);
   assert.equal(marker.selection.selectedCardActive, true);
-  assertControlMarker(marker, marker.selection.targetPetId);
-  return marker.selection.targetPetId;
+  assertControlMarker(marker, marker.selection.targetPetId, marker.initial.petCount);
+  return {
+    selectedPetId: marker.selection.targetPetId,
+    petCount: marker.initial.petCount,
+  };
 }
 
-function assertRestartMarker(marker, selectedPetId) {
+function assertRestartMarker(marker, selectedPetId, petCount) {
   assert.equal(marker.kind, "desktop-pet-smoke");
   assert.equal(marker.phase, "restart");
   assert.equal(marker.ok, true, marker.error);
@@ -215,7 +218,7 @@ function assertRestartMarker(marker, selectedPetId) {
   assert.equal(marker.persisted.state, "idle");
   assert.equal(marker.resize.handleRendered, true);
   assert.equal(marker.resize.persistedWidthPx, 204);
-  assertControlMarker(marker, selectedPetId);
+  assertControlMarker(marker, selectedPetId, petCount);
 }
 
 function assertRuntimeStateGuard(marker) {
@@ -235,7 +238,7 @@ function assertRuntimeStateGuard(marker) {
   assert.equal(marker.stateLifecycle.jumpingSettledRendered, "idle");
 }
 
-function assertControlMarker(marker, selectedPetId) {
+function assertControlMarker(marker, selectedPetId, petCount) {
   assert.equal(marker.control.access.control.appCloseRejected, true);
   assert.match(marker.control.access.control.appCloseError, /ipc_forbidden/i);
   assert.equal(marker.control.access.control.rendererAlive, true);
@@ -257,7 +260,7 @@ function assertControlMarker(marker, selectedPetId) {
   assert.equal(marker.control.picker.selectionDockRendered, true);
   assert.equal(marker.control.picker.libraryButtonRendered, true);
   assert.equal(marker.control.picker.launchAtLoginRendered, true);
-  assert.equal(marker.control.picker.userPetCount, 31);
+  assert.equal(marker.control.picker.userPetCount, petCount);
   assert.equal(marker.control.picker.settingsPanelAbsent, true);
   assert.equal(marker.control.picker.closeApiAvailable, true);
 

@@ -529,8 +529,8 @@ function registerIpc(selectionStore) {
   on("window:drag-start", (payload) => {
     startOverlayDrag(payload);
   });
-  on("window:drag-move", (payload) => {
-    moveOverlayDrag(payload);
+  on("window:drag-move", () => {
+    moveOverlayDrag();
   });
   on("window:drag-end", () => {
     stopOverlayDrag();
@@ -742,18 +742,14 @@ function startOverlayDrag(payload) {
   };
 }
 
-function moveOverlayDrag(payload) {
-  if (!mainWindow || mainWindow.isDestroyed()) return;
-  const point = {
-    x: Number(payload?.screenX),
-    y: Number(payload?.screenY),
-  };
-  if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return;
+function moveOverlayDrag() {
+  if (!mainWindow || mainWindow.isDestroyed() || !dragSession) return;
+  const cursor = screen.getCursorScreenPoint();
 
   stopInertia();
   setPointerPassthrough(false);
-  if (dragSession) dragSession.hasMoved = true;
-  moveOverlayWindow(payload, dragSession);
+  dragSession.hasMoved = true;
+  moveOverlayWindow({ screenX: cursor.x, screenY: cursor.y }, dragSession);
 }
 
 function stopOverlayDrag() {

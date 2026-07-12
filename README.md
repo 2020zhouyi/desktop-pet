@@ -16,15 +16,15 @@
 - 角色大小与当前选择自动保存
 - 开机自启开关
 - 角色气泡台词
-- 30 个内置剑三角色
+- 25 个内置剑三角色
 - 从统一宠物目录添加自定义角色
 
 ## 下载与启动
 
 前往 [Releases](https://github.com/2020zhouyi/desktop-pet/releases/latest) 下载对应平台文件：
 
-- macOS：`Desktop.Pet.MVP-0.1.1-mac-arm64.dmg`
-- Windows：`Desktop.Pet.MVP-0.1.1-win-x64.exe`
+- macOS：`Desktop.Pet.MVP-0.1.2-mac-arm64.dmg`
+- Windows：`Desktop.Pet.MVP-0.1.2-win-x64.exe`
 
 macOS 构建暂未进行 Apple 签名和公证。如果系统阻止首次启动，请在“系统设置 → 隐私与安全性”中确认打开。
 

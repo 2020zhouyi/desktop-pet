@@ -46,12 +46,7 @@ export type DesktopPetApi = {
     pointerWindowX: number;
     pointerWindowY: number;
   }): Promise<void>;
-  moveWindowDrag(payload: {
-    screenX: number;
-    screenY: number;
-    pointerWindowX: number;
-    pointerWindowY: number;
-  }): Promise<void>;
+  moveWindowDrag(): Promise<void>;
   stopWindowDrag(): Promise<void>;
   resizeMascot(widthPx: number, persist?: boolean): Promise<number>;
   setVisualInsets(insets: {
