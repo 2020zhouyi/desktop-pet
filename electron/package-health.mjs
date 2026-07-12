@@ -12,6 +12,7 @@ export const requiredBuildFilePatterns = [
   "public/**/*",
   "package.json",
 ];
+export const requiredAsarUnpackPatterns = ["pets/**/*"];
 
 export async function validatePackageHealth({
   projectRoot = process.cwd(),
@@ -42,6 +43,7 @@ export async function validatePackageHealth({
   } else {
     packageIssues.push(
       ...validateRequiredBuildFiles(packageResult.packageJson, { requiredPatterns }),
+      ...validateRequiredAsarUnpack(packageResult.packageJson),
     );
   }
 
@@ -64,6 +66,28 @@ export async function validatePackageHealth({
     packageIssues,
     petHealth,
   };
+}
+
+export function validateRequiredAsarUnpack(
+  packageJson,
+  { requiredPatterns = requiredAsarUnpackPatterns } = {},
+) {
+  const configuredPatterns = new Set(
+    Array.isArray(packageJson?.build?.asarUnpack)
+      ? packageJson.build.asarUnpack
+        .filter((entry) => typeof entry === "string")
+        .map((entry) => normalizeBuildFilePattern(entry))
+      : [],
+  );
+
+  return requiredPatterns
+    .filter((pattern) => !configuredPatterns.has(normalizeBuildFilePattern(pattern)))
+    .map((pattern) => issue({
+      severity: "error",
+      code: "missing_required_asar_unpack",
+      pattern,
+      message: `electron-builder build.asarUnpack is missing required entry "${pattern}".`,
+    }));
 }
 
 export function validateRequiredBuildFiles(

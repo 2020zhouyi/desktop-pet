@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   formatPackageHealthReport,
+  requiredAsarUnpackPatterns,
   requiredBuildFilePatterns,
   validatePackageHealth,
 } from "../electron/package-health.mjs";
@@ -41,12 +42,25 @@ try {
 
   const completeRoot = await writeProject("complete-config", {
     buildFiles: requiredBuildFilePatterns,
+    asarUnpack: requiredAsarUnpackPatterns,
     pet: "valid",
   });
   const completeResult = await validatePackageHealth({ projectRoot: completeRoot });
   assert.equal(completeResult.ok, true);
   assert.equal(completeResult.packageErrorCount, 0);
   assert.equal(completeResult.petHealth.scannedPetCount, 1);
+
+  const packedPetsRoot = await writeProject("pets-inside-asar", {
+    buildFiles: requiredBuildFilePatterns,
+    asarUnpack: [],
+    pet: "valid",
+  });
+  const packedPetsResult = await validatePackageHealth({ projectRoot: packedPetsRoot });
+  assert.equal(packedPetsResult.ok, false);
+  assert.equal(
+    findIssue(packedPetsResult, "missing_required_asar_unpack", "pets/**/*").severity,
+    "error",
+  );
 
   const completeReport = formatPackageHealthReport(completeResult);
   assert.match(completeReport, /Package check passed/);
@@ -61,6 +75,7 @@ try {
 
   const brokenPetRoot = await writeProject("broken-pet", {
     buildFiles: requiredBuildFilePatterns,
+    asarUnpack: requiredAsarUnpackPatterns,
     pet: "missing-spritesheet",
   });
   const brokenPetResult = await validatePackageHealth({ projectRoot: brokenPetRoot });
@@ -78,15 +93,15 @@ try {
   await rm(tempDir, { recursive: true, force: true });
 }
 
-async function writeProject(name, { buildFiles, pet }) {
+async function writeProject(name, { buildFiles, asarUnpack = requiredAsarUnpackPatterns, pet }) {
   const projectRoot = path.join(tempDir, name);
   await mkdir(path.join(projectRoot, "pets"), { recursive: true });
-  await writePackageJson(projectRoot, buildFiles);
+  await writePackageJson(projectRoot, buildFiles, asarUnpack);
   await writePet(path.join(projectRoot, "pets"), pet);
   return projectRoot;
 }
 
-async function writePackageJson(projectRoot, files) {
+async function writePackageJson(projectRoot, files, asarUnpack) {
   await writeFile(
     path.join(projectRoot, "package.json"),
     JSON.stringify({
@@ -94,6 +109,7 @@ async function writePackageJson(projectRoot, files) {
       type: "module",
       build: {
         files,
+        asarUnpack,
       },
     }),
     "utf8",

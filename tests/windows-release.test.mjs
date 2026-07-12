@@ -15,9 +15,11 @@ assert.equal(windowsTargets.has("zip"), true, "Windows release should keep a por
 assert.equal(packageJson.build.nsis.oneClick, false);
 assert.equal(packageJson.build.nsis.allowToChangeInstallationDirectory, true);
 assert.equal(packageJson.build.nsis.runAfterFinish, true);
+assert.deepEqual(packageJson.build.asarUnpack, ["pets/**/*"]);
 
 assert.match(mainSource, /webContents\.once\("did-finish-load", revealInitialPetWindow\)/);
 assert.match(mainSource, /process\.platform === "win32"\s*\? mainWindow\.show\(\)/);
 assert.match(mainSource, /: mainWindow\.showInactive\(\)/);
+assert.match(mainSource, /path\.join\(process\.resourcesPath, "app\.asar\.unpacked", "pets"\)/);
 
 console.log("Windows release contract tests passed");

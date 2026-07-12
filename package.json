@@ -1,6 +1,6 @@
 {
   "name": "desktop-pet-mvp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "main": "electron/main.mjs",
@@ -40,6 +40,9 @@
     "appId": "com.desktoppet.mvp",
     "productName": "Desktop Pet MVP",
     "asar": true,
+    "asarUnpack": [
+      "pets/**/*"
+    ],
     "electronLanguages": [
       "zh-CN",
       "en-US"

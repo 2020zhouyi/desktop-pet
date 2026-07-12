@@ -57,9 +57,12 @@ const defaultActionDurationMs = {
   jumping: 1300,
 };
 
-const projectPetsDir = path.join(projectRoot, "pets");
+const projectPetsDir = app.isPackaged
+  ? path.join(process.resourcesPath, "app.asar.unpacked", "pets")
+  : path.join(projectRoot, "pets");
 let userPetsDir = null;
 let activeSelectionStore = null;
+let useBundledPetsFallback = false;
 const preferredDefaultPetFolder = "jx3-u4e03-u79c0-01";
 
 let mainWindow = null;
@@ -314,7 +317,11 @@ async function loadPets() {
 }
 
 function petDirectories() {
-  return userPetsDir ? [{ source: "user", dir: userPetsDir }] : [];
+  const directories = userPetsDir ? [{ source: "user", dir: userPetsDir }] : [];
+  if (useBundledPetsFallback) {
+    directories.push({ source: "bundled", dir: projectPetsDir });
+  }
+  return directories;
 }
 
 async function reloadPetLibrary() {
@@ -892,8 +899,13 @@ app.whenReady().then(async () => {
   );
   activeSelectionStore = selectionStore;
   userPetsDir = path.join(app.getPath("userData"), "pets");
-  await seedBundledPetLibrary({ bundledRoot: projectPetsDir, libraryRoot: userPetsDir });
-  await normalizePetLibraryFolders(userPetsDir);
+  try {
+    await seedBundledPetLibrary({ bundledRoot: projectPetsDir, libraryRoot: userPetsDir });
+    await normalizePetLibraryFolders(userPetsDir);
+  } catch (error) {
+    useBundledPetsFallback = true;
+    console.error("Failed to initialize writable pet library; using bundled pets:", error);
+  }
   const storedPetId = migrateSelectedPetId(await selectionStore.read());
   currentMascotWidth = await selectionStore.readMascotWidth() ?? defaultMascotWidth;
   applyLaunchAtLogin(await selectionStore.readLaunchAtLogin());
