@@ -7,26 +7,46 @@ export function normalizeVisualInsets(insets) {
   };
 }
 
-export function fallbackVisualInsetsForMascot(bounds, mascotWidth, mascotAspectRatio) {
+export function fallbackVisualInsetsForMascot(
+  bounds,
+  mascotWidth,
+  mascotAspectRatio,
+  bottomInset = 0,
+) {
   const width = finitePositive(mascotWidth);
   const aspectRatio = finitePositive(mascotAspectRatio);
   if (width === null || aspectRatio === null) return normalizeVisualInsets(null);
 
   const mascotHeight = width / aspectRatio;
+  const safeBottomInset = Math.min(
+    finiteNonNegative(bottomInset),
+    Math.max(0, Number(bounds?.height) - mascotHeight),
+  );
   return normalizeVisualInsets({
     left: (Number(bounds?.width) - width) / 2,
     right: (Number(bounds?.width) - width) / 2,
-    top: (Number(bounds?.height) - mascotHeight) / 2,
-    bottom: (Number(bounds?.height) - mascotHeight) / 2,
+    top: Number(bounds?.height) - mascotHeight - safeBottomInset,
+    bottom: safeBottomInset,
   });
 }
 
-export function activeVisualInsets(bounds, visualInsets, mascotWidth, mascotAspectRatio) {
+export function activeVisualInsets(
+  bounds,
+  visualInsets,
+  mascotWidth,
+  mascotAspectRatio,
+  fallbackBottomInset = 0,
+) {
   const normalizedInsets = normalizeVisualInsets(visualInsets);
   const hasRendererInsets = Object.values(normalizedInsets).some((value) => value > 0);
   return hasRendererInsets
     ? safeVisualInsetsForBounds(bounds, normalizedInsets)
-    : fallbackVisualInsetsForMascot(bounds, mascotWidth, mascotAspectRatio);
+    : fallbackVisualInsetsForMascot(
+      bounds,
+      mascotWidth,
+      mascotAspectRatio,
+      fallbackBottomInset,
+    );
 }
 
 export function visibleRectFromInsets(bounds, insets) {

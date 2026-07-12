@@ -610,6 +610,7 @@ function applyAlwaysOnTopSetting() {
 async function selectPetById(id, selectionStore) {
   const pet = petState.pets.find((candidate) => candidate.id === id) ?? null;
   if (!pet) return null;
+  visualInsets = normalizeVisualInsets(null);
   petState.selectedPetId = pet.id;
   await selectionStore.write(pet.id);
   broadcastStatus();
@@ -635,6 +636,7 @@ function resizeOverlayForMascot(widthPx) {
   );
   if (!Number.isFinite(width)) return currentMascotWidth;
   currentMascotWidth = width;
+  visualInsets = normalizeVisualInsets(null);
   if (!mainWindow || mainWindow.isDestroyed()) return width;
 
   const bounds = mainWindow.getBounds();
@@ -654,6 +656,22 @@ function resizeOverlayForMascot(widthPx) {
 
 function setVisualInsets(insets) {
   visualInsets = normalizeVisualInsets(insets);
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+
+  const bounds = mainWindow.getBounds();
+  const safeInsets = activeVisualInsets(
+    bounds,
+    visualInsets,
+    currentMascotWidth,
+    mascotAspectRatio,
+    overlayPadding,
+  );
+  if (dragSession) dragSession.insets = safeInsets;
+
+  const nextBounds = clampBoundsToDisplay(bounds, safeInsets);
+  if (nextBounds.x !== bounds.x || nextBounds.y !== bounds.y) {
+    mainWindow.setPosition(nextBounds.x, nextBounds.y, false);
+  }
 }
 
 function setPointerPassthrough(enabled, { force = false } = {}) {
@@ -701,7 +719,13 @@ function startOverlayDrag(payload) {
   stopInertia();
   setPointerPassthrough(false);
   const bounds = mainWindow.getBounds();
-  const insets = activeVisualInsets(bounds, visualInsets, currentMascotWidth, mascotAspectRatio);
+  const insets = activeVisualInsets(
+    bounds,
+    visualInsets,
+    currentMascotWidth,
+    mascotAspectRatio,
+    overlayPadding,
+  );
   dragSession = {
     bounds,
     pointerWindowOffset: {
@@ -768,7 +792,13 @@ function moveOverlayWindow(payload, session = null) {
     pointer: point,
     pointerWindowOffset,
     workArea: display.workArea,
-    insets: session?.insets ?? activeVisualInsets(bounds, visualInsets, currentMascotWidth, mascotAspectRatio),
+    insets: session?.insets ?? activeVisualInsets(
+      bounds,
+      visualInsets,
+      currentMascotWidth,
+      mascotAspectRatio,
+      overlayPadding,
+    ),
   });
   mainWindow.setPosition(next.x, next.y, false);
 }
@@ -776,7 +806,13 @@ function moveOverlayWindow(payload, session = null) {
 function clampBoundsToDisplay(bounds, insetsOverride = null) {
   const display = screen.getDisplayMatching(bounds);
   const insets = insetsOverride ??
-    activeVisualInsets(bounds, visualInsets, currentMascotWidth, mascotAspectRatio);
+    activeVisualInsets(
+      bounds,
+      visualInsets,
+      currentMascotWidth,
+      mascotAspectRatio,
+      overlayPadding,
+    );
   return clampBoundsToWorkArea(bounds, display.workArea, insets);
 }
 
@@ -825,6 +861,7 @@ function windowStatus() {
     visualInsets,
     currentMascotWidth,
     mascotAspectRatio,
+    overlayPadding,
   );
   return {
     exists: true,

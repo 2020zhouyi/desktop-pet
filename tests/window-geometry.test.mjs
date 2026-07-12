@@ -17,16 +17,16 @@ import {
 const bounds = { x: 100, y: 80, width: 340, height: 434 };
 const workArea = { x: 0, y: 0, width: 1440, height: 900 };
 
-const fallbackInsets = fallbackVisualInsetsForMascot(bounds, 120, 192 / 208);
+const fallbackInsets = fallbackVisualInsetsForMascot(bounds, 120, 192 / 208, 12);
 assert.deepEqual(fallbackInsets, {
   left: 110,
   right: 110,
-  top: 152,
-  bottom: 152,
+  top: 292,
+  bottom: 12,
 });
 
 assert.deepEqual(
-  activeVisualInsets(bounds, { left: 0, top: 0, right: 0, bottom: 0 }, 120, 192 / 208),
+  activeVisualInsets(bounds, { left: 0, top: 0, right: 0, bottom: 0 }, 120, 192 / 208, 12),
   fallbackInsets,
 );
 assert.deepEqual(
@@ -37,13 +37,13 @@ assert.deepEqual(
 const visibleRect = visibleRectFromInsets(bounds, fallbackInsets);
 assert.deepEqual(visibleRect, {
   left: 210,
-  top: 232,
+  top: 372,
   right: 330,
-  bottom: 362,
+  bottom: 502,
 });
-assert.equal(pointInRect({ x: 240, y: 260 }, visibleRect), true);
-assert.equal(pointInRect({ x: 180, y: 260 }, visibleRect), false);
-assert.equal(pointInRect({ x: 202, y: 260 }, expandRect(visibleRect, 8)), true);
+assert.equal(pointInRect({ x: 240, y: 400 }, visibleRect), true);
+assert.equal(pointInRect({ x: 180, y: 400 }, visibleRect), false);
+assert.equal(pointInRect({ x: 202, y: 400 }, expandRect(visibleRect, 8)), true);
 
 assert.equal(
   pointerPassthroughDecision({ bounds, cursor: { x: 120, y: 100 }, isVisible: true }),
