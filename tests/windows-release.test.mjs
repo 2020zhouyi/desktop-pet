@@ -1,0 +1,23 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
+const projectRoot = path.resolve(import.meta.dirname, "..");
+const packageJson = JSON.parse(await readFile(path.join(projectRoot, "package.json"), "utf8"));
+const mainSource = await readFile(path.join(projectRoot, "electron", "main.mjs"), "utf8");
+
+const windowsTargets = new Set(
+  packageJson.build.win.target.map((entry) => typeof entry === "string" ? entry : entry.target),
+);
+
+assert.equal(windowsTargets.has("nsis"), true, "Windows release must include an installer");
+assert.equal(windowsTargets.has("zip"), true, "Windows release should keep a portable ZIP");
+assert.equal(packageJson.build.nsis.oneClick, false);
+assert.equal(packageJson.build.nsis.allowToChangeInstallationDirectory, true);
+assert.equal(packageJson.build.nsis.runAfterFinish, true);
+
+assert.match(mainSource, /webContents\.once\("did-finish-load", revealInitialPetWindow\)/);
+assert.match(mainSource, /process\.platform === "win32"\s*\? mainWindow\.show\(\)/);
+assert.match(mainSource, /: mainWindow\.showInactive\(\)/);
+
+console.log("Windows release contract tests passed");

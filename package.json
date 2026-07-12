@@ -1,6 +1,6 @@
 {
   "name": "desktop-pet-mvp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "main": "electron/main.mjs",
@@ -14,6 +14,7 @@
     "test:window-security": "node tests/window-security.test.mjs",
     "test:window-geometry": "node tests/window-geometry.test.mjs",
     "test:window-surfaces": "node tests/window-surfaces.test.mjs",
+    "test:windows-release": "node tests/windows-release.test.mjs",
     "test:ipc-capabilities": "node tests/ipc-capabilities.test.mjs",
     "test:picker-only-surface": "node tests/picker-only-surface.test.mjs",
     "test:picker-preview": "node --experimental-strip-types tests/behavior/picker-preview.test.ts",
@@ -61,12 +62,25 @@
     "win": {
       "target": [
         {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
           "target": "zip",
           "arch": [
             "x64"
           ]
         }
       ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true
     },
     "directories": {
       "output": "release"

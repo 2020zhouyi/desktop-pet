@@ -23,12 +23,12 @@
 
 前往 [Releases](https://github.com/2020zhouyi/desktop-pet/releases/latest) 下载对应平台文件：
 
-- macOS：`Desktop.Pet.MVP-0.1.0-mac-arm64.dmg`
-- Windows：`Desktop.Pet.MVP-0.1.0-win-x64.zip`
+- macOS：`Desktop.Pet.MVP-0.1.1-mac-arm64.dmg`
+- Windows：`Desktop.Pet.MVP-0.1.1-win-x64.exe`
 
 macOS 构建暂未进行 Apple 签名和公证。如果系统阻止首次启动，请在“系统设置 → 隐私与安全性”中确认打开。
 
-Windows 版本解压后直接运行应用即可。
+Windows 版本请运行安装程序，安装完成后从桌面或开始菜单启动。安装程序会同时放好桌宠运行所需的资源文件，不要只复制单独的 `.exe` 到其他目录运行。
 
 ## 基本操作
 

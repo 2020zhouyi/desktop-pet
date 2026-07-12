@@ -14,6 +14,7 @@ const commands = [
   "test:window-security",
   "test:window-geometry",
   "test:window-surfaces",
+  "test:windows-release",
   "test:ipc-capabilities",
   "test:picker-only-surface",
   "pet:check",

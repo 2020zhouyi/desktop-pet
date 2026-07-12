@@ -5,7 +5,16 @@
 - 桌宠 MVP 当前主线已经收敛为纯桌宠核心：透明 `PetWindow`、picker-only `ControlWindow`、sprite 渲染、四态直接交互、四类基础气泡和内置宠物选择器。
 - 运行时资源边界保持收紧：应用只读 `desktop-pet-mvp/pets/`；不扫描、不导入、不修改 `~/.codex/pets`，该目录也不参与打包。
 - 发布前闭环是 `npm run release:gate` -> `docs/release-smoke.md` 人工冒烟；其中 `release:gate` 串起 `preflight`、清理当前项目 `release/`、`dist:all` 和 `package:verify`。
-- 版本号暂未提升，仍以 `package.json` 的 `0.1.0` 为唯一来源；后续发布用户可见新节点时再单独 bump。
+- 当前发布版本以 `package.json` 的 `0.1.1` 为唯一来源。
+
+## 2026-07-12
+
+### Windows 首次显示与安装包修复
+
+- Windows 首次显示改为同时监听 `ready-to-show` 与 `did-finish-load`，并保持幂等，避免透明桌宠因单一时序事件未触发而始终不可见。
+- Windows 使用主动 `show()`；macOS 等平台继续使用不抢焦点的 `showInactive()`。
+- 发布目标新增 NSIS 安装程序，同时保留便携 ZIP；安装程序支持选择目录、桌面与开始菜单快捷方式、安装完成后启动。
+- 新增 Windows 发布契约测试并纳入 `preflight`，覆盖安装器配置和首次显示兜底。
 
 ## 2026-07-11
 

@@ -85,6 +85,7 @@ const petState = {
 function createWindow() {
   const initialBounds = currentWindowBounds();
   const minimumBounds = overlayBoundsForMascot(mascotSize.min);
+  let hasRevealedInitialPetWindow = false;
   mainWindow = new BrowserWindow({
     width: initialBounds.width,
     height: initialBounds.height,
@@ -121,13 +122,13 @@ function createWindow() {
     console.error("Failed to load pet window:", error);
   });
 
-  mainWindow.once("ready-to-show", () => {
-    mainWindow?.showInactive();
-    mainWindow?.moveTop();
-    setPointerPassthrough(true);
+  const revealInitialPetWindow = () => {
+    if (hasRevealedInitialPetWindow || !mainWindow || mainWindow.isDestroyed()) return;
+    hasRevealedInitialPetWindow = true;
     revealPetWindow({ center: true, action: false });
-    broadcastStatus();
-  });
+  };
+  mainWindow.once("ready-to-show", revealInitialPetWindow);
+  mainWindow.webContents.once("did-finish-load", revealInitialPetWindow);
 
   mainWindow.on("closed", () => {
     stopOverlayDrag();
@@ -845,7 +846,7 @@ function revealPetWindow(options = {}) {
     if (nextBounds) mainWindow.setBounds(nextBounds, false);
   }
 
-  mainWindow.showInactive();
+  process.platform === "win32" ? mainWindow.show() : mainWindow.showInactive();
 
   mainWindow.moveTop();
   setPointerPassthrough(true);
