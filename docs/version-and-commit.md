@@ -23,6 +23,8 @@
 
 ```text
 selectedPetId
+mascotWidthPx
+launchAtLogin
 ```
 
 - 核心状态机只包含：
@@ -34,8 +36,10 @@ waving
 jumping
 ```
 
-- Runtime 不包含本地 HTTP 服务或 token、外部宠物导入与本地删除、提醒或主动调度、开机自启。
-- Runtime 只读取仓库 `pets/` 中随应用打包的内置宠物。
+- Runtime 不包含本地 HTTP 服务或 token、应用内宠物导入/删除、提醒或主动调度。
+- Runtime 只读取 `userData/pets/`；“管理宠物”通过系统文件管理器打开该目录。
+- 发布包离线包含完整 `pets-seed`。首次运行迁移到统一目录并写入一次性标记，玩家删除的角色不会自动恢复。
+- 开机自启只保留 picker 中的一个受限勾选项。
 
 ## 仓库与提交边界
 
@@ -113,7 +117,7 @@ CI 使用 `npm ci` 和 `npm run preflight`，不生成 release，也不替代真
 - 重复打开 picker 复用同一个控制窗实例。
 - 打开和关闭控制窗前后，桌宠位置与尺寸不变。
 - 标题栏关闭、面板关闭按钮和 Escape 只关闭控制窗；桌宠继续运行。
-- picker 只显示内置宠物，搜索、分页、预览和确认切换可用。
+- picker 显示统一用户目录中的宠物，搜索、分页、预览和确认切换可用。
 
 ### Selection
 
@@ -148,9 +152,10 @@ preflight -> clean desktop-pet-mvp/release -> dist:all -> package:verify
 - 只清理本仓库 `release/`。
 - `npm run pet:check` 只读检查 `pets/`。
 - `npm run package:check` 只读检查 Electron Builder 配置和资源范围。
-- `npm run package:verify` 只读检查已有 Mac/Windows `app.asar`。
+- `npm run package:verify` 只读检查已有 Mac/Windows `app.asar` 和 `resources/pets-seed/`。
 - `npm run dist:all` 和 `npm run release:gate` 会写入 `release/`。
 - macOS 当前 `identity=null`；本地包不等于完成签名和公证的公开发行包。
+- macOS 产物为 DMG；Windows 产物为便携 ZIP，不发布 NSIS 安装器。
 - 最后按 `release-smoke.md` 记录双窗口、bounds、持久化、资源和平台结果。
 
 ## 宠物资源

@@ -23,6 +23,7 @@ const requiredRuntimeEntries = [
   "electron/ipc-capabilities.mjs",
   "electron/pet-selection-store.mjs",
   "electron/pet-manifest.mjs",
+  "electron/pet-library.mjs",
   "electron/smoke-probe.mjs",
   "electron/window-geometry.mjs",
   "electron/window-surfaces.mjs",
@@ -135,71 +136,17 @@ try {
     }
   }
 
-  const missingPetsRoot = await writeProject("missing-pets", [
+  const bundledPetsRoot = await writeProject("bundled-pets", [
     { folderName: "alpha", spritesheetPath: "spritesheet.webp" },
   ]);
-  await writeReleaseAsars(missingPetsRoot, [], { includePetsDirectory: false });
-  const missingPetsResult = await validatePackageArtifacts({ projectRoot: missingPetsRoot });
-  assert.equal(missingPetsResult.ok, false);
-  assert.equal(findIssue(missingPetsResult, "missing_pets_directory").severity, "error");
-
-  const countMismatchRoot = await writeProject("count-mismatch", [
-    { folderName: "alpha", spritesheetPath: "spritesheet.webp" },
-    { folderName: "beta", spritesheetPath: "spritesheet.webp" },
-  ]);
-  await writeReleaseAsars(countMismatchRoot, [
-    { folderName: "alpha", spritesheetPath: "spritesheet.webp" },
-  ]);
-  const countMismatchResult = await validatePackageArtifacts({ projectRoot: countMismatchRoot });
-  assert.equal(countMismatchResult.ok, false);
-  assert.equal(findIssue(countMismatchResult, "manifest_count_mismatch").localCount, 2);
-  assert.equal(findIssue(countMismatchResult, "missing_packaged_manifest").folderName, "beta");
-
-  const badEntryRoot = await writeProject("bad-entries", [
-    { folderName: "alpha", spritesheetPath: "spritesheet.webp" },
-  ]);
-  await writeReleaseAsars(badEntryRoot, [
-    { folderName: "alpha", spritesheetPath: "spritesheet.webp" },
-    { folderName: "alpha_副本", spritesheetPath: "spritesheet.webp" },
-    { folderName: ".importing-alpha-123", spritesheetPath: "spritesheet.webp" },
-    { folderName: "test-material", spritesheetPath: "spritesheet.webp" },
-  ]);
-  const badEntryResult = await validatePackageArtifacts({ projectRoot: badEntryRoot });
-  assert.equal(badEntryResult.ok, false);
-  assert.equal(findIssue(badEntryResult, "disallowed_pet_entry", "alpha_副本").reason, "copy");
-  assert.equal(
-    findIssue(badEntryResult, "disallowed_pet_entry", ".importing-alpha-123").reason,
-    "staging",
+  await writeReleaseAsars(
+    bundledPetsRoot,
+    [{ folderName: "alpha", spritesheetPath: "spritesheet.webp" }],
+    { appPets: [{ folderName: "alpha", spritesheetPath: "spritesheet.webp" }] },
   );
-  assert.equal(findIssue(badEntryResult, "disallowed_pet_entry", "test-material").reason, "test");
-
-  const badEntryCli = await execFileResult(process.execPath, [
-    cliPath,
-    "--project-root",
-    badEntryRoot,
-  ]);
-  assert.notEqual(badEntryCli.code, 0);
-  assert.match(badEntryCli.stdout, /Package artifact verify failed/);
-  assert.match(badEntryCli.stdout, /disallowed pet package entry/);
-
-  const unexpectedFileRoot = await writeProject("unexpected-file", [
-    { folderName: "alpha", spritesheetPath: "spritesheet.webp" },
-  ]);
-  await writeReleaseAsars(unexpectedFileRoot, [
-    {
-      folderName: "alpha",
-      spritesheetPath: "spritesheet.webp",
-      extraFiles: { "notes.txt": "do not package me" },
-    },
-  ]);
-  const unexpectedFileResult = await validatePackageArtifacts({
-    projectRoot: unexpectedFileRoot,
-  });
-  assert.equal(unexpectedFileResult.ok, false);
-  assert.equal(
-    findIssue(unexpectedFileResult, "unexpected_packaged_pet_entry", "alpha").entry,
-    "/pets/alpha/notes.txt",
-  );
+  const bundledPetsResult = await validatePackageArtifacts({ projectRoot: bundledPetsRoot });
+  assert.equal(bundledPetsResult.ok, false);
+  assert.equal(findIssue(bundledPetsResult, "bundled_pet_resources_in_app_asar").severity, "error");
 
   console.log("package verify tests passed");
 } finally {
@@ -218,7 +165,7 @@ async function writeProject(name, pets) {
 }
 
 async function writeReleaseAsars(projectRoot, pets, options = {}) {
-  await writeAppAsar(
+  const asarPaths = [
     path.join(
       projectRoot,
       "release",
@@ -228,21 +175,20 @@ async function writeReleaseAsars(projectRoot, pets, options = {}) {
       "Resources",
       "app.asar",
     ),
-    pets,
-    options,
-  );
-  await writeAppAsar(
     path.join(projectRoot, "release", "win-unpacked", "resources", "app.asar"),
-    pets,
-    options,
-  );
+  ];
+  for (const asarPath of asarPaths) {
+    await writeAppAsar(asarPath, options.appPets ?? [], options);
+    const seedRoot = path.join(path.dirname(asarPath), "pets-seed");
+    for (const pet of pets) await writePet(seedRoot, pet);
+  }
 }
 
 async function writeAppAsar(
   asarPath,
   pets,
   {
-    includePetsDirectory = true,
+    includePetsDirectory = pets.length > 0,
     missingRuntimeEntries = [],
     retiredRuntimeEntries: includedRetiredRuntimeEntries = [],
   } = {},

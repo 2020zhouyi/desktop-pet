@@ -13,6 +13,7 @@ const requiredRuntimeEntries = [
   "/electron/ipc-capabilities.mjs",
   "/electron/pet-selection-store.mjs",
   "/electron/pet-manifest.mjs",
+  "/electron/pet-library.mjs",
   "/electron/smoke-probe.mjs",
   "/electron/window-geometry.mjs",
   "/electron/window-surfaces.mjs",
@@ -115,7 +116,7 @@ export function formatPackageVerifyReport(result) {
       `${formatCount(result.errorCount, "error")}, ${formatCount(result.warningCount, "warning")}.`,
   );
   lines.push(
-    "Scope: reads desktop-pet-mvp/release app.asar files and project-local desktop-pet-mvp/pets only.",
+    "Scope: reads release app.asar and pets-seed artifacts plus project-local desktop-pet-mvp/pets.",
   );
   lines.push(
     "This check is read-only; it does not run electron-builder, generate installers, or modify release files.",
@@ -144,8 +145,7 @@ export function formatPackageVerifyReport(result) {
     for (const artifact of result.artifacts) {
       lines.push(
         `- ${artifact.platform}: ${artifact.relativePath} ` +
-          `(${formatCount(artifact.packagedManifestCount, "pet manifest")}, ` +
-          `${formatCount(artifact.packagedSpritesheetCount, "covered spritesheet")})`,
+          `(${formatCount(artifact.seedPetCount, "seed pet")})`,
       );
       if (artifact.issues.length === 0) {
         lines.push("  OK");
@@ -177,78 +177,70 @@ async function validateAsarArtifact(artifact, localPets) {
 
   const entrySet = new Set(entries);
   artifactIssues.push(...findRuntimeEntryIssues(entrySet));
-  const hasPetsDirectory = entrySet.has("/pets");
   const petEntries = entries.filter((entry) => entry === "/pets" || entry.startsWith("/pets/"));
-  if (!hasPetsDirectory) {
+  if (petEntries.length > 0) {
     artifactIssues.push(issue({
       severity: "error",
-      code: "missing_pets_directory",
-      message: "Packaged app.asar is missing /pets.",
+      code: "bundled_pet_resources_in_app_asar",
+      message: "Packaged app.asar must not contain /pets; runtime uses the consumable pets-seed resource.",
     }));
   }
 
-  const packagedManifestPaths = entries.filter((entry) => /^\/pets\/[^/]+\/pet\.json$/.test(entry));
-  const packagedManifestFolders = packagedManifestPaths.map((entry) => entry.split("/")[2]).sort();
-  const expectedFolders = localPets.map((pet) => pet.folderName).sort();
-
-  if (packagedManifestPaths.length !== localPets.length) {
-    artifactIssues.push(issue({
-      severity: "error",
-      code: "manifest_count_mismatch",
-      localCount: localPets.length,
-      packagedCount: packagedManifestPaths.length,
-      message: `Packaged /pets/*/pet.json count is ${packagedManifestPaths.length}, expected ${localPets.length}.`,
-    }));
-  }
-
-  for (const folderName of expectedFolders) {
-    if (packagedManifestFolders.includes(folderName)) continue;
-    artifactIssues.push(issue({
-      severity: "error",
-      code: "missing_packaged_manifest",
-      folderName,
-      message: `Missing packaged manifest /pets/${folderName}/pet.json.`,
-    }));
-  }
-
-  for (const folderName of packagedManifestFolders) {
-    if (expectedFolders.includes(folderName)) continue;
-    artifactIssues.push(issue({
-      severity: "error",
-      code: "unexpected_packaged_manifest",
-      folderName,
-      message: `Unexpected packaged manifest /pets/${folderName}/pet.json.`,
-    }));
-  }
-
-  let packagedSpritesheetCount = 0;
-  for (const pet of localPets) {
-    const expectedSprite = `/pets/${pet.folderName}/${pet.spritesheetPath}`;
-    if (entrySet.has(expectedSprite)) {
-      packagedSpritesheetCount += 1;
-      continue;
-    }
-    artifactIssues.push(issue({
-      severity: "error",
-      code: "missing_packaged_spritesheet",
-      folderName: pet.folderName,
-      spritesheetPath: pet.spritesheetPath,
-      message: `Missing packaged spritesheet ${expectedSprite}.`,
-    }));
-  }
-
-  const disallowedEntries = findDisallowedPetEntries(petEntries);
-  artifactIssues.push(...disallowedEntries);
-  artifactIssues.push(...findUnexpectedPackagedPetEntries(petEntries, localPets));
+  const seedHealth = await validatePetHealth({ petsRoot: artifact.seedRoot });
+  artifactIssues.push(...seedHealth.issues.map((item) => ({
+    ...item,
+    code: `seed_${item.code}`,
+    message: `Packaged pets-seed: ${item.message}`,
+  })));
+  const seedPets = await readLocalPets(artifact.seedRoot, artifactIssues);
+  artifactIssues.push(...compareSeedPets(localPets, seedPets));
 
   return {
     ...artifact,
-    packagedManifestCount: packagedManifestPaths.length,
-    packagedSpritesheetCount,
+    seedPetCount: seedPets.length,
     issues: artifactIssues,
     errorCount: countSeverity(artifactIssues, "error"),
     warningCount: countSeverity(artifactIssues, "warning"),
   };
+}
+
+function compareSeedPets(localPets, seedPets) {
+  const issues = [];
+  const expected = new Map(localPets.map((pet) => [pet.folderName, pet]));
+  const actual = new Map(seedPets.map((pet) => [pet.folderName, pet]));
+
+  for (const [folderName, pet] of expected) {
+    const packagedPet = actual.get(folderName);
+    if (!packagedPet) {
+      issues.push(issue({
+        severity: "error",
+        code: "seed_pet_missing",
+        folderName,
+        message: `Packaged pets-seed is missing ${folderName}.`,
+      }));
+      continue;
+    }
+    if (packagedPet.spritesheetPath !== pet.spritesheetPath) {
+      issues.push(issue({
+        severity: "error",
+        code: "seed_spritesheet_mismatch",
+        folderName,
+        message: `Packaged pets-seed uses ${packagedPet.spritesheetPath}; expected ${pet.spritesheetPath}.`,
+      }));
+    }
+  }
+
+  for (const folderName of actual.keys()) {
+    if (expected.has(folderName)) continue;
+    issues.push(issue({
+      severity: "error",
+      code: "unexpected_seed_pet",
+      folderName,
+      message: `Packaged pets-seed contains unexpected pet ${folderName}.`,
+    }));
+  }
+
+  return issues;
 }
 
 function findRuntimeEntryIssues(entrySet) {
@@ -287,45 +279,6 @@ function findRuntimeEntryIssues(entrySet) {
   return issues;
 }
 
-function findUnexpectedPackagedPetEntries(entries, localPets) {
-  const expectedPets = new Map(localPets.map((pet) => [pet.folderName, pet]));
-  const issues = [];
-  const seen = new Set();
-
-  for (const entry of entries) {
-    const parts = entry.split("/").filter(Boolean);
-    if (parts.length <= 1) continue;
-    const folderName = parts[1];
-    const pet = expectedPets.get(folderName);
-    if (!pet) continue;
-
-    const allowedEntries = allowedPackagedEntriesForPet(pet);
-    if (allowedEntries.has(entry)) continue;
-    if ([...allowedEntries].some((allowed) => allowed.startsWith(`${entry}/`))) continue;
-
-    const key = `${folderName}:${entry}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    issues.push(issue({
-      severity: "error",
-      code: "unexpected_packaged_pet_entry",
-      folderName,
-      entry,
-      message: `Unexpected packaged pet entry ${entry}; only pet.json and the spritesheet are expected.`,
-    }));
-  }
-
-  return issues;
-}
-
-function allowedPackagedEntriesForPet(pet) {
-  return new Set([
-    `/pets/${pet.folderName}`,
-    `/pets/${pet.folderName}/pet.json`,
-    `/pets/${pet.folderName}/${pet.spritesheetPath}`,
-  ]);
-}
-
 async function discoverAppAsars(releaseRoot) {
   const found = [];
 
@@ -344,6 +297,7 @@ async function discoverAppAsars(releaseRoot) {
       found.push({
         platform,
         asarPath: filePath,
+        seedRoot: path.join(path.dirname(filePath), "pets-seed"),
         relativePath,
       });
     }
@@ -419,43 +373,6 @@ function classifyAppAsar(relativePath) {
   return null;
 }
 
-function findDisallowedPetEntries(entries) {
-  const issues = [];
-  const seen = new Set();
-
-  for (const entry of entries) {
-    for (const segment of entry.split("/").filter(Boolean).slice(1)) {
-      const disallowed = classifyDisallowedPetSegment(segment);
-      if (!disallowed) continue;
-      const key = `${segment}:${disallowed.reason}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      issues.push(issue({
-        severity: "error",
-        code: "disallowed_pet_entry",
-        folderName: segment,
-        reason: disallowed.reason,
-        message: `Found disallowed pet package entry "${segment}" (${disallowed.description}).`,
-      }));
-    }
-  }
-
-  return issues;
-}
-
-function classifyDisallowedPetSegment(segment) {
-  if (segment.startsWith(".importing-")) {
-    return { reason: "staging", description: "stale .importing-* staging directory" };
-  }
-  if (hasCopySuffix(segment)) {
-    return { reason: "copy", description: "duplicate copy suffix" };
-  }
-  if (hasTestMaterialName(segment)) {
-    return { reason: "test", description: "test or temporary material name" };
-  }
-  return null;
-}
-
 function normalizeManifestSpritesheetPath(value) {
   if (typeof value !== "string" || !value.trim()) return null;
   const parts = value.trim().split(/[\\/]/).filter(Boolean);
@@ -470,20 +387,6 @@ function normalizeAsarEntry(entry) {
 
 function normalizePath(value) {
   return value.replaceAll("\\", "/");
-}
-
-function hasCopySuffix(folderName) {
-  return (
-    /_副本(?:$|[-_\s(（])/.test(folderName) ||
-    /(?:^|[-_\s])副本(?:$|[-_\s)）])/.test(folderName) ||
-    /(?:^|[-_\s])copy(?:$|[-_\s]?\d+$|\s+\d+$)/i.test(folderName) ||
-    /\(\d+\)$/.test(folderName)
-  );
-}
-
-function hasTestMaterialName(segment) {
-  if (/测试|测试素材|示例素材/.test(segment)) return true;
-  return /(?:^|[-_.\s])(test|fixture|fixtures|sample|mock|tmp|temp)(?:$|[-_.\s])/i.test(segment);
 }
 
 function issue(value) {

@@ -8,6 +8,7 @@ import { shouldOpenExternalUrl } from "./window-security.mjs";
 import { isTrustedSurfaceUrl, surfaceSearchParams } from "./window-surfaces.mjs";
 import { normalizePetManifest } from "./pet-manifest.mjs";
 import {
+  consumeBundledPetLibrary,
   migrateSelectedPetId,
   normalizePetLibraryFolders,
   seedBundledPetLibrary,
@@ -58,11 +59,11 @@ const defaultActionDurationMs = {
 };
 
 const projectPetsDir = app.isPackaged
-  ? path.join(process.resourcesPath, "app.asar.unpacked", "pets")
+  ? path.join(process.resourcesPath, "pets-seed")
   : path.join(projectRoot, "pets");
 let userPetsDir = null;
 let activeSelectionStore = null;
-let useBundledPetsFallback = false;
+let useDevelopmentPetsFallback = false;
 const preferredDefaultPetFolder = "jx3-u4e03-u79c0-01";
 
 let mainWindow = null;
@@ -318,7 +319,7 @@ async function loadPets() {
 
 function petDirectories() {
   const directories = userPetsDir ? [{ source: "user", dir: userPetsDir }] : [];
-  if (useBundledPetsFallback) {
+  if (useDevelopmentPetsFallback) {
     directories.push({ source: "bundled", dir: projectPetsDir });
   }
   return directories;
@@ -933,11 +934,15 @@ app.whenReady().then(async () => {
   activeSelectionStore = selectionStore;
   userPetsDir = path.join(app.getPath("userData"), "pets");
   try {
-    await seedBundledPetLibrary({ bundledRoot: projectPetsDir, libraryRoot: userPetsDir });
+    if (app.isPackaged) {
+      await consumeBundledPetLibrary({ bundledRoot: projectPetsDir, libraryRoot: userPetsDir });
+    } else {
+      await seedBundledPetLibrary({ bundledRoot: projectPetsDir, libraryRoot: userPetsDir });
+    }
     await normalizePetLibraryFolders(userPetsDir);
   } catch (error) {
-    useBundledPetsFallback = true;
-    console.error("Failed to initialize writable pet library; using bundled pets:", error);
+    useDevelopmentPetsFallback = !app.isPackaged;
+    console.error("Failed to initialize writable pet library:", error);
   }
   const storedPetId = migrateSelectedPetId(await selectionStore.read());
   currentMascotWidth = await selectionStore.readMascotWidth() ?? defaultMascotWidth;

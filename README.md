@@ -23,12 +23,14 @@
 
 前往 [Releases](https://github.com/2020zhouyi/desktop-pet/releases/latest) 下载对应平台文件：
 
-- macOS：`Desktop.Pet.MVP-0.1.2-mac-arm64.dmg`
-- Windows：`Desktop.Pet.MVP-0.1.2-win-x64.exe`
+- macOS：`Desktop.Pet.MVP-0.1.3-mac-arm64.dmg`
+- Windows：`Desktop.Pet.MVP-0.1.3-win-x64.zip`
 
 macOS 构建暂未进行 Apple 签名和公证。如果系统阻止首次启动，请在“系统设置 → 隐私与安全性”中确认打开。
 
-Windows 版本请运行安装程序，安装完成后从桌面或开始菜单启动。安装程序会同时放好桌宠运行所需的资源文件，不要只复制单独的 `.exe` 到其他目录运行。
+Windows 版本无需安装：解压完整 ZIP 后运行其中的 `Desktop Pet MVP.exe`，不要只把单独的 `.exe` 拿出目录。
+
+两个平台包都离线包含全部 25 个角色。首次运行会把这些资源迁移到统一宠物目录；以后程序只读取该目录。你可以在“管理宠物”打开的文件夹中直接添加、改名或删除角色，删掉的内置角色不会在重启后自动恢复。
 
 ## 基本操作
 
@@ -108,7 +110,7 @@ npm run release:gate
 ```text
 electron/  Electron 主进程、窗口与系统能力
 src/       React 桌宠、角色选择器与交互
-pets/      内置角色资源
+pets/      打包时使用的 25 个离线角色种子
 scripts/   资源检查、构建和发布脚本
 tests/     状态机、窗口、安全与资源测试
 docs/      manifest、架构决策和发布说明

@@ -21,7 +21,7 @@ desktop-pet-mvp/
 |   |-- pet-manifest.mjs         manifest v1 归一化
 |   |-- pet-health.mjs           内置 pets 资源健康检查
 |   |-- package-health.mjs       Electron Builder 配置与资源范围检查
-|   |-- package-verify.mjs       release/app.asar 内容验收
+|   |-- package-verify.mjs       app.asar 与 release/pets-seed 成品验收
 |   `-- smoke-probe.mjs          真实 Electron 双窗口探针
 |-- src/
 |   |-- App.tsx                  surface 路由与 PetWindow renderer
@@ -113,6 +113,8 @@ npm run release:gate
 
 ## Packaging And Site Boundary
 
-- Electron Builder 只打包 `dist/`、`electron/`、`pets/`、`public/` 和 `package.json`。
+- `app.asar` 只打包 `dist/`、`electron/`、`public/` 和 `package.json`；25 个角色通过 `extraResources` 单独进入 `resources/pets-seed/`。
+- macOS 发布 DMG；Windows 发布包含完整应用目录和资源的便携 ZIP，不生成安装器。
+- 打包态首次运行优先移动 `pets-seed` 到 `userData/pets/`，跨卷或只读来源则复制并尽力删除源目录；一次性标记防止后续恢复用户已删除角色。
 - `release/` 是生成产物，不进入 git，也不属于父目录任何项目。
 - `desktop-pet-site` 通过独立配置提供下载或展示，不读取本仓库运行时状态。

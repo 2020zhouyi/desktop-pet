@@ -10,17 +10,16 @@ const windowsTargets = new Set(
   packageJson.build.win.target.map((entry) => typeof entry === "string" ? entry : entry.target),
 );
 
-assert.equal(windowsTargets.has("nsis"), true, "Windows release must include an installer");
-assert.equal(windowsTargets.has("zip"), true, "Windows release should keep a portable ZIP");
-assert.equal(packageJson.build.nsis.oneClick, false);
-assert.equal(packageJson.build.nsis.allowToChangeInstallationDirectory, true);
-assert.equal(packageJson.build.nsis.runAfterFinish, true);
-assert.deepEqual(packageJson.build.asarUnpack, ["pets/**/*"]);
+assert.equal(windowsTargets.has("nsis"), false, "Windows release must not ship an installer");
+assert.equal(windowsTargets.has("zip"), true, "Windows release must ship a portable ZIP");
+assert.deepEqual(packageJson.build.extraResources, [{ from: "pets", to: "pets-seed" }]);
+assert.equal(packageJson.build.files.includes("pets/**/*"), false);
 
 assert.match(mainSource, /webContents\.once\("did-finish-load", revealInitialPetWindow\)/);
 assert.match(mainSource, /process\.platform === "win32"\s*\? mainWindow\.show\(\)/);
 assert.match(mainSource, /: mainWindow\.showInactive\(\)/);
-assert.match(mainSource, /path\.join\(process\.resourcesPath, "app\.asar\.unpacked", "pets"\)/);
+assert.match(mainSource, /path\.join\(process\.resourcesPath, "pets-seed"\)/);
+assert.match(mainSource, /consumeBundledPetLibrary/);
 
 const moveDragBody = mainSource.match(
   /function moveOverlayDrag\([^)]*\) \{(?<body>[\s\S]*?)\n\}/,

@@ -1,4 +1,4 @@
-import { access, cp, mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
+import { access, cp, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 export const bundledPetSeedMarker = ".bundled-pets-seeded-v1.json";
@@ -31,6 +31,42 @@ export async function seedBundledPetLibrary({ bundledRoot, libraryRoot }) {
 
   await writeFile(markerPath, `${JSON.stringify({ folders }, null, 2)}\n`, "utf8");
   return { seeded: true, copiedFolders };
+}
+
+export async function consumeBundledPetLibrary({ bundledRoot, libraryRoot }) {
+  await mkdir(libraryRoot, { recursive: true });
+  const markerPath = path.join(libraryRoot, bundledPetSeedMarker);
+  if (await pathExists(markerPath)) {
+    await removeBestEffort(bundledRoot);
+    return { consumed: false, movedFolders: [], preservedFolders: [] };
+  }
+
+  const entries = await readdir(bundledRoot, { withFileTypes: true });
+  const folders = entries
+    .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
+    .map((entry) => entry.name)
+    .sort();
+  const movedFolders = [];
+  const preservedFolders = [];
+
+  for (const folder of folders) {
+    const source = path.join(bundledRoot, folder);
+    const manifest = await readPetManifest(source);
+    const destinationFolder = petFolderName(manifest?.displayName, folder);
+    const destination = path.join(libraryRoot, destinationFolder);
+    if (await pathExists(destination)) {
+      preservedFolders.push(destinationFolder);
+      await removeBestEffort(source);
+      continue;
+    }
+
+    await moveDirectory(source, destination);
+    movedFolders.push(destinationFolder);
+  }
+
+  await writeFile(path.join(libraryRoot, bundledPetSeedMarker), `${JSON.stringify({ folders }, null, 2)}\n`, "utf8");
+  await removeBestEffort(bundledRoot);
+  return { consumed: true, movedFolders, preservedFolders };
 }
 
 export async function normalizePetLibraryFolders(libraryRoot) {
@@ -92,5 +128,27 @@ async function readPetManifest(petFolder) {
       : null;
   } catch {
     return null;
+  }
+}
+
+async function moveDirectory(source, destination) {
+  try {
+    await rename(source, destination);
+  } catch (error) {
+    if (!["EXDEV", "EACCES", "EPERM", "EROFS"].includes(error?.code)) throw error;
+    await cp(source, destination, {
+      recursive: true,
+      errorOnExist: true,
+      force: false,
+    });
+    await removeBestEffort(source);
+  }
+}
+
+async function removeBestEffort(target) {
+  try {
+    await rm(target, { recursive: true, force: true });
+  } catch (error) {
+    if (!["EACCES", "EPERM", "EROFS"].includes(error?.code)) throw error;
   }
 }

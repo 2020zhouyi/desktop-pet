@@ -101,7 +101,7 @@ npm run dev
 
 - `npm run pet:check` 通过，验证仓库内置种子；Electron smoke 另验证统一用户宠物库。
 - 每个宠物目录只有 `pet.json` 和一个被 manifest 引用的 spritesheet。
-- `npm run package:verify` 在 Mac 与 Windows `app.asar` 中找到同一组内置 pets。
+- `npm run package:verify` 确认 Mac 与 Windows `app.asar` 不含重复 pets，且两个 `resources/pets-seed/` 都包含完整 25 个角色。
 - 安装包运行时不依赖仓库外资源。
 - `release/`、安装包、日志和本地选宠文件保持未跟踪。
 

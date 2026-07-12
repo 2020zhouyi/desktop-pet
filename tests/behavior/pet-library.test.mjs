@@ -3,6 +3,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
+  consumeBundledPetLibrary,
   migrateSelectedPetId,
   normalizePetLibraryFolders,
   petFolderName,
@@ -12,6 +13,8 @@ import {
 const root = await mkdtemp(path.join(os.tmpdir(), "desktop-pet-library-"));
 const bundledRoot = path.join(root, "bundled");
 const libraryRoot = path.join(root, "library");
+const consumableRoot = path.join(root, "consumable");
+const consumedLibraryRoot = path.join(root, "consumed-library");
 
 assert.equal(migrateSelectedPetId("project:pet-one"), "user:pet-one");
 assert.equal(migrateSelectedPetId("user:pet-one"), "user:pet-one");
@@ -36,6 +39,36 @@ try {
 
   const normalized = await normalizePetLibraryFolders(libraryRoot);
   assert.deepEqual(normalized.renamed, [{ from: "custom-one", to: "Custom One" }]);
+
+  await createPet(consumableRoot, "alpha", "甲");
+  await createPet(consumableRoot, "beta", "乙");
+  await mkdir(path.join(consumedLibraryRoot, "乙"), { recursive: true });
+  await writeFile(path.join(consumedLibraryRoot, "乙", "keep.txt"), "player-owned", "utf8");
+
+  const consumed = await consumeBundledPetLibrary({
+    bundledRoot: consumableRoot,
+    libraryRoot: consumedLibraryRoot,
+  });
+  assert.equal(consumed.consumed, true);
+  assert.deepEqual(consumed.movedFolders, ["甲"]);
+  assert.deepEqual(consumed.preservedFolders, ["乙"]);
+  await assert.rejects(readFile(path.join(consumableRoot, "alpha", "pet.json")), /ENOENT/);
+  assert.equal(
+    await readFile(path.join(consumedLibraryRoot, "甲", "spritesheet.webp"), "utf8"),
+    "fixture",
+  );
+  assert.equal(
+    await readFile(path.join(consumedLibraryRoot, "乙", "keep.txt"), "utf8"),
+    "player-owned",
+  );
+
+  await rm(path.join(consumedLibraryRoot, "甲"), { recursive: true, force: true });
+  const afterPlayerDelete = await consumeBundledPetLibrary({
+    bundledRoot: consumableRoot,
+    libraryRoot: consumedLibraryRoot,
+  });
+  assert.equal(afterPlayerDelete.consumed, false);
+  await assert.rejects(readFile(path.join(consumedLibraryRoot, "甲", "pet.json")), /ENOENT/);
 } finally {
   await rm(root, { recursive: true, force: true });
 }

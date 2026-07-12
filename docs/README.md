@@ -14,6 +14,7 @@
 | [project-structure.md](project-structure.md) | 当前代码 tree、双窗口、交互状态、统一宠物库和资源契约 |
 | [decisions/0004-unified-user-pet-library.md](decisions/0004-unified-user-pet-library.md) | 内置与自定义资源统一进入可写用户目录 |
 | [decisions/0005-lightweight-launch-at-login.md](decisions/0005-lightweight-launch-at-login.md) | picker 内的受限开机自启开关 |
+| [decisions/0006-consumable-packaged-pet-seed.md](decisions/0006-consumable-packaged-pet-seed.md) | 发布包内含资源、首次运行迁移且删除不恢复 |
 | [release-smoke.md](release-smoke.md) | 自动与人工双窗口发布验收 |
 
 五分钟启动和命令入口见 [../README.md](../README.md)。把项目交给外部模型时使用 [model-handoff.md](model-handoff.md)。

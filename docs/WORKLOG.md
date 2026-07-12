@@ -3,9 +3,20 @@
 ## 当前收口状态
 
 - 桌宠 MVP 当前主线已经收敛为纯桌宠核心：透明 `PetWindow`、picker-only `ControlWindow`、sprite 渲染、四态直接交互、四类基础气泡和内置宠物选择器。
-- 运行时资源边界保持收紧：应用只读 `desktop-pet-mvp/pets/`；不扫描、不导入、不修改 `~/.codex/pets`，该目录也不参与打包。
+- 运行时只读 Electron `userData/pets/`；发布包离线内含 25 个角色种子，首次运行后迁移到该统一目录。
 - 发布前闭环是 `npm run release:gate` -> `docs/release-smoke.md` 人工冒烟；其中 `release:gate` 串起 `preflight`、清理当前项目 `release/`、`dist:all` 和 `package:verify`。
-- 当前发布版本以 `package.json` 的 `0.1.2` 为唯一来源。
+- 当前发布版本以 `package.json` 的 `0.1.3` 为唯一来源。
+
+## 2026-07-13
+
+### 离线资源包与统一目录去重
+
+- Mac DMG 与 Windows 便携 ZIP 都包含完整 25 个角色，不依赖联网下载或仓库外文件。
+- 角色不再进入 `app.asar`，改由 Electron Builder `extraResources` 放入 `resources/pets-seed/`。
+- 打包态首次启动把种子目录优先移动到 `userData/pets/`；跨卷或只读来源回退为复制，并尽力删除源资源。
+- 一次性初始化标记保留“删除不恢复”语义；已有同名用户角色不会被覆盖。
+- 包验证同时检查 app.asar 不含重复角色，以及 Mac/Windows `pets-seed` 与项目 25 个角色完全一致。
+- Windows 只发布完整便携 ZIP，不再生成 NSIS 安装器；macOS 继续发布 DMG。
 
 ## 2026-07-12
 

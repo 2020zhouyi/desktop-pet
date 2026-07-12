@@ -1,6 +1,6 @@
 {
   "name": "desktop-pet-mvp",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "type": "module",
   "main": "electron/main.mjs",
@@ -40,8 +40,11 @@
     "appId": "com.desktoppet.mvp",
     "productName": "Desktop Pet MVP",
     "asar": true,
-    "asarUnpack": [
-      "pets/**/*"
+    "extraResources": [
+      {
+        "from": "pets",
+        "to": "pets-seed"
+      }
     ],
     "electronLanguages": [
       "zh-CN",
@@ -50,7 +53,6 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "pets/**/*",
       "public/**/*",
       "package.json"
     ],
@@ -65,25 +67,12 @@
     "win": {
       "target": [
         {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
           "target": "zip",
           "arch": [
             "x64"
           ]
         }
       ]
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "runAfterFinish": true
     },
     "directories": {
       "output": "release"

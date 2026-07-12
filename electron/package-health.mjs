@@ -8,11 +8,9 @@ import {
 export const requiredBuildFilePatterns = [
   "dist/**/*",
   "electron/**/*",
-  "pets/**/*",
   "public/**/*",
   "package.json",
 ];
-export const requiredAsarUnpackPatterns = ["pets/**/*"];
 
 export async function validatePackageHealth({
   projectRoot = process.cwd(),
@@ -43,7 +41,7 @@ export async function validatePackageHealth({
   } else {
     packageIssues.push(
       ...validateRequiredBuildFiles(packageResult.packageJson, { requiredPatterns }),
-      ...validateRequiredAsarUnpack(packageResult.packageJson),
+      ...validatePetSeedPackaging(packageResult.packageJson),
     );
   }
 
@@ -68,26 +66,34 @@ export async function validatePackageHealth({
   };
 }
 
-export function validateRequiredAsarUnpack(
-  packageJson,
-  { requiredPatterns = requiredAsarUnpackPatterns } = {},
-) {
-  const configuredPatterns = new Set(
-    Array.isArray(packageJson?.build?.asarUnpack)
-      ? packageJson.build.asarUnpack
-        .filter((entry) => typeof entry === "string")
-        .map((entry) => normalizeBuildFilePattern(entry))
-      : [],
-  );
-
-  return requiredPatterns
-    .filter((pattern) => !configuredPatterns.has(normalizeBuildFilePattern(pattern)))
-    .map((pattern) => issue({
+export function validatePetSeedPackaging(packageJson) {
+  const issues = [];
+  const files = Array.isArray(packageJson?.build?.files) ? packageJson.build.files : [];
+  if (files.some((entry) => normalizeBuildFilePattern(entry) === "pets/**/*")) {
+    issues.push(issue({
       severity: "error",
-      code: "missing_required_asar_unpack",
-      pattern,
-      message: `electron-builder build.asarUnpack is missing required entry "${pattern}".`,
+      code: "bundled_pets_in_app_files",
+      pattern: "pets/**/*",
+      message: "pets/**/* must not be stored in app.asar; package them as consumable extraResources.",
     }));
+  }
+
+  const resources = Array.isArray(packageJson?.build?.extraResources)
+    ? packageJson.build.extraResources
+    : [];
+  const hasPetSeed = resources.some((entry) => {
+    if (!entry || typeof entry !== "object") return false;
+    return normalizeBuildFilePattern(entry.from) === "pets" &&
+      normalizeBuildFilePattern(entry.to) === "pets-seed";
+  });
+  if (!hasPetSeed) {
+    issues.push(issue({
+      severity: "error",
+      code: "missing_pet_seed_resource",
+      message: "electron-builder build.extraResources must map pets to pets-seed.",
+    }));
+  }
+  return issues;
 }
 
 export function validateRequiredBuildFiles(
@@ -144,7 +150,7 @@ export function formatPackageHealthReport(result) {
   );
 
   if (result.packageIssues.length === 0) {
-    lines.push("Package config: all required build.files entries are present.");
+    lines.push("Package config: runtime files and consumable pet seed mapping are valid.");
   } else {
     lines.push("Package config:");
     for (const item of result.packageIssues) {
@@ -176,6 +182,7 @@ async function readPackageJson(packageJsonPath) {
 }
 
 function normalizeBuildFilePattern(pattern) {
+  if (typeof pattern !== "string") return "";
   return pattern.replaceAll("\\", "/").replace(/^\.\//, "");
 }
 
