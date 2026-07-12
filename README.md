@@ -23,8 +23,8 @@
 
 前往 [Releases](https://github.com/2020zhouyi/desktop-pet/releases/latest) 下载对应平台文件：
 
-- macOS：`Desktop Pet MVP-0.1.0-mac-arm64.dmg`
-- Windows：`Desktop Pet MVP-0.1.0-win-x64.zip`
+- macOS：`Desktop.Pet.MVP-0.1.0-mac-arm64.dmg`
+- Windows：`Desktop.Pet.MVP-0.1.0-win-x64.zip`
 
 macOS 构建暂未进行 Apple 签名和公证。如果系统阻止首次启动，请在“系统设置 → 隐私与安全性”中确认打开。
 
