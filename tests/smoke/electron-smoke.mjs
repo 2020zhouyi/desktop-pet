@@ -11,6 +11,7 @@ const markerPrefix = "DESKTOP_PET_SMOKE_RESULT=";
 const rendererUrl = "http://127.0.0.1:5173/";
 const projectRoot = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const viteCli = path.join(projectRoot, "node_modules", "vite", "bin", "vite.js");
+const electronExecutable = typeof electronPath === "string" ? electronPath : process.execPath;
 const packagedExecutable = process.env.DESKTOP_PET_SMOKE_EXECUTABLE?.trim() || null;
 const smokeMode = packagedExecutable ? "packaged" : "development";
 const userDataDir = await mkdtemp(path.join(os.tmpdir(), "desktop-pet-electron-smoke-"));
@@ -71,8 +72,9 @@ function startElectron(phase) {
     DESKTOP_PET_SMOKE_PHASE: phase,
     FORCE_COLOR: "0",
   };
+  delete env.ELECTRON_RUN_AS_NODE;
 
-  const executable = packagedExecutable ?? electronPath;
+  const executable = packagedExecutable ?? electronExecutable;
   const args = packagedExecutable
     ? [`--user-data-dir=${userDataDir}`]
     : [projectRoot, `--user-data-dir=${userDataDir}`];

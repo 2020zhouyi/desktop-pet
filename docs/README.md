@@ -1,6 +1,6 @@
 # Desktop Pet Docs
 
-这组文档只覆盖 `desktop-pet-mvp` Electron 桌宠核心。父目录中的 `desktop-pet-site` 是独立展示站，`petdex` 是参考快照；除非任务明确跨项目，否则不要混写运行逻辑、生成产物或提交。
+这组文档只覆盖 `desktop-pet-mvp` 桌宠核心，包括当前 Electron 发布主线与正在验收的 Windows Rust/Win32 原生候选。父目录中的 `desktop-pet-site` 是独立展示站，`petdex` 是参考快照；除非任务明确跨项目，否则不要混写运行逻辑、生成产物或提交。
 
 ## 当前入口
 
@@ -15,7 +15,10 @@
 | [decisions/0004-unified-user-pet-library.md](decisions/0004-unified-user-pet-library.md) | 内置与自定义资源统一进入可写用户目录 |
 | [decisions/0005-lightweight-launch-at-login.md](decisions/0005-lightweight-launch-at-login.md) | picker 内的受限开机自启开关 |
 | [decisions/0006-consumable-packaged-pet-seed.md](decisions/0006-consumable-packaged-pet-seed.md) | 发布包内含资源、首次运行迁移且删除不恢复 |
+| [decisions/0007-windows-native-runtime-spike.md](decisions/0007-windows-native-runtime-spike.md) | Windows 原生 PetWindow 验证、迁移门槛与包体预算 |
+| [windows-native-migration.md](windows-native-migration.md) | 完整原生架构、功能对照、VM/实机验收、发布与回滚 |
 | [release-smoke.md](release-smoke.md) | 自动与人工双窗口发布验收 |
+| [project-retrospective.md](project-retrospective.md) | 桌宠与展示站的双项目复盘、数据链、经验和后续建议 |
 
 五分钟启动和命令入口见 [../README.md](../README.md)。把项目交给外部模型时使用 [model-handoff.md](model-handoff.md)。
 
@@ -41,15 +44,17 @@
 
 - `PetWindow` 是透明常驻桌宠窗口。
 - `ControlWindow` 只承载 picker，不再存在 settings surface。
-- 持久化只保留 `selectedPetId` 与直接拖拽产生的 `mascotWidthPx`。
+- 持久化只保留 `selectedPetId`、直接拖拽产生的 `mascotWidthPx` 与 `launchAtLogin`。
 - 核心状态为 `idle`、`running-right`、`running-left`、`waving`、`jumping`。
 - 气泡只有 `welcome`、`click`、`drag`、`petSwitch`。
 - 运行时只加载统一用户宠物目录；仓库 `pets/` 是首次初始化种子。
+- Electron 仍是公开发布回滚线；Windows 原生候选已完成 ARM64 来宾中的 x64 单屏早期验收，但登录自启复测、混合 DPI/多屏和真实 x64 仍待发布前验证，不得把早期 VM 结果写成已迁移发布。
 
 ## 更新规则
 
 - 用户可见行为或运行命令变化：更新根 `README.md`、`project-structure.md` 和相关测试说明。
 - 窗口架构变化：先更新或新增 ADR，再同步 `release-smoke.md`。
+- Windows 原生行为、包体或发布边界变化：同步 `windows-native-migration.md`、ADR-0007 和 Windows workflow。
 - 气泡 scene、alias 或角色 JSON 变化：同步 `speech-bubble-copy-guide.md` 并运行 `npm run test:bubbles`。
 - manifest、资源 allowlist 或打包变化：同步 `manifest-v1.md`、`version-and-commit.md` 和 `release-smoke.md`。
 - 历史计划只允许补充状态说明；不要把历史正文重新列为当前入口。

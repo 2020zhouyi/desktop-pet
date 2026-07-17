@@ -1,0 +1,9 @@
+[package]
+name = "desktop-pet-app"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+desktop-pet-core = { path = "../desktop-pet-core" }
+serde_json = "1.0.149"

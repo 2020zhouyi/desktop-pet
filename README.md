@@ -68,9 +68,13 @@ macOS:   ~/Library/Application Support/desktop-pet-mvp/pets/
 Windows: %APPDATA%\desktop-pet-mvp\pets\
 ```
 
+正在验收的 Windows 原生候选使用 `%LOCALAPPDATA%\DesktopPet\pets\`；公开下载入口切换前，普通玩家仍以本节 Electron 路径为准。
+
+原生候选首次启动会把现有 Electron 设置与宠物从 `%APPDATA%\desktop-pet-mvp\` 合并复制到新目录；不会覆盖原生已有同名内容，也不会删除旧目录，因此仍可回退到 Electron 版本。
+
 ## 自定义角色
 
-桌宠使用 `8 × 9` 动画图集，每格 `192 × 208`，完整尺寸为 `1536 × 1872`。最小 `pet.json` 示例：
+桌宠使用 `8 × 9` 动画图集，每格 `192 × 208`，完整尺寸为 `1536 × 1872`；图集可使用 WebP、PNG 或 SVG。最小 `pet.json` 示例：
 
 ```json
 {
@@ -105,11 +109,21 @@ npm run smoke:electron
 npm run release:gate
 ```
 
+Windows 原生候选需要 Rust stable；共享契约可在 macOS/Linux 检查，真实运行和发布仍必须在 Windows 验收：
+
+```sh
+cargo test --manifest-path native/Cargo.toml --workspace --locked
+cargo clippy --manifest-path native/Cargo.toml --workspace --all-targets --locked -- -D warnings
+```
+
+完整迁移状态、Windows 包体门禁和回滚路径见 [Windows 原生迁移与验收](docs/windows-native-migration.md)。原生候选已在 Windows 11 ARM64 的 x64 仿真中完成单屏启动、拖拽、缩放、选宠和托盘等早期验收；按本轮收口决定，登录自启复测、混合 DPI/多屏和真实 x64 门禁留给发布前执行。当前公开 Windows Release 仍使用 Electron ZIP。
+
 ## 项目结构
 
 ```text
 electron/  Electron 主进程、窗口与系统能力
 src/       React 桌宠、角色选择器与交互
+native/    Windows Rust/Win32 功能等价候选
 pets/      打包时使用的 25 个离线角色种子
 scripts/   资源检查、构建和发布脚本
 tests/     状态机、窗口、安全与资源测试

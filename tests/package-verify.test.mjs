@@ -10,6 +10,9 @@ import {
   validatePackageArtifacts,
 } from "../electron/package-verify.mjs";
 
+const removeDirectory = process.versions.electron
+  ? (await import("original-fs")).promises.rm
+  : rm;
 const tempDir = await mkdtemp(path.join(os.tmpdir(), "desktop-package-verify-"));
 const cliPath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -150,7 +153,7 @@ try {
 
   console.log("package verify tests passed");
 } finally {
-  await rm(tempDir, { recursive: true, force: true });
+  await removeTree(tempDir);
 }
 
 async function writeProject(name, pets) {
@@ -231,7 +234,16 @@ async function writeAppAsar(
   }
 
   await createPackage(appRoot, asarPath);
-  await rm(appRoot, { recursive: true, force: true });
+  await removeTree(appRoot);
+}
+
+function removeTree(directory) {
+  return removeDirectory(directory, {
+    recursive: true,
+    force: true,
+    maxRetries: 5,
+    retryDelay: 50,
+  });
 }
 
 async function writePet(root, { folderName, spritesheetPath, extraFiles = {} }) {

@@ -1,0 +1,20 @@
+[workspace]
+members = [
+  "desktop-pet-app",
+  "desktop-pet-core",
+  "desktop-pet-render",
+  "desktop-pet-windows",
+]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.3"
+edition = "2024"
+publish = false
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+opt-level = "z"
+panic = "abort"
+strip = "symbols"

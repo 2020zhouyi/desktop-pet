@@ -2,10 +2,52 @@
 
 ## 当前收口状态
 
-- 桌宠 MVP 当前主线已经收敛为纯桌宠核心：透明 `PetWindow`、picker-only `ControlWindow`、sprite 渲染、四态直接交互、四类基础气泡和内置宠物选择器。
-- 运行时只读 Electron `userData/pets/`；发布包离线内含 25 个角色种子，首次运行后迁移到该统一目录。
-- 发布前闭环是 `npm run release:gate` -> `docs/release-smoke.md` 人工冒烟；其中 `release:gate` 串起 `preflight`、清理当前项目 `release/`、`dist:all` 和 `package:verify`。
+- 当前公开发布主线仍是精简后的 Electron 双窗口；Windows Rust/Win32 完整候选已经实现，并完成 ARM64 来宾中的 x64 单屏早期验收，但登录自启复测、混合 DPI/多屏、真实 x64 和发布资产切换仍待发布前完成，因此保留 Electron Windows ZIP 作为回滚真相。
+- 两条实现都保持透明 `PetWindow`、picker-only 控制窗、四态直接交互、四类气泡、25 个离线宠物和同一三字段设置契约。
+- 运行时只读统一用户宠物目录：Electron 使用 `userData/pets/`，原生 Windows 使用 `%LOCALAPPDATA%/DesktopPet/pets/`；发布种子只消费一次。
+- Electron 发布闭环仍是 `npm run release:gate` -> `docs/release-smoke.md`；原生 Windows 使用 Rust workspace 门禁、`native/scripts/package-windows.ps1`、隔离运行证据脚本和 `docs/windows-native-migration.md`。
 - 当前发布版本以 `package.json` 的 `0.1.3` 为唯一来源。
+
+## 2026-07-16
+
+### Windows 原生完整候选（代码与 ARM64 早期验收收口）
+
+- 新增 `native/desktop-pet-core` Rust workspace，把精简版状态机、8×9 动画时间线、拖拽/DPI 几何与 84–228px / 12px 分档缩放从平台窗口代码中抽为共享核心。
+- P0 删除重复的几何模块并直接依赖共享核心；idle atlas 解码也改为读取共享动画时间线，避免原型与生产迁移各维护一套持续时间。
+- 共享核心新增 Manifest v1、安全相对资源路径和旧 `desktop-pet-settings.json` 三字段兼容层；非法旧字段仍会在写回时被过滤。
+- 新增现有资源契约门禁：仓库 25 个宠物必须全部被原生 manifest 解析接受、spritesheet 路径安全且四类气泡均非空。
+- 四类气泡的 manifest 优先级、generic fallback、清静/日常/活泼节奏、近期文案去重和 cooldown 倍率已迁入共享核心；当前 25 个角色继续直接读取各自 `pet.json.bubbleLines`。
+- 新增生产 `desktop-pet-app` 宿主层：负责统一用户宠物库、`project:*` 旧选择迁移、失效选择回退和三字段事务写回；坏设置或坏自定义宠物不会阻塞其余角色启动。
+- 首次原生启动会从 `%APPDATA%/desktop-pet-mvp` 合并复制现有 Electron 设置、自定义宠物和种子标记到 `%LOCALAPPDATA%/DesktopPet`；原生已有内容优先，旧目录不删除，保证切换后状态延续且 Electron 可回滚。
+- 原生打包态改为消费式 `pets-seed`：优先移动，失败后 staging 复制，清理只做 best effort；已有同名用户目录不覆盖，玩家之后删除的内置角色不会恢复。核心与应用测试覆盖首次消费、冲突、重复启动和只读源回退。
+- 新增 `desktop-pet-render`，原生解码全部 25 个 1536×1872 WebP 图集，并保持自定义 PNG/SVG 图集兼容；按现有四态时间线渲染、缓存缩放帧并用当前帧 alpha 做命中。
+- 生产 Win32 宿主已实现 layered `PetWindow`、独立 click-through 气泡 HWND、Per-Monitor V2 DPI、捕获式拖拽、直接缩放、单实例 mutex、HKCU `Run` 自启、托盘和 `%LOCALAPPDATA%` 事件日志。
+- 新增完全原生 `PickerWindow`，包含搜索、4×2 分页、真实角色缩略图、预览/确认两阶段选择、自启勾选和打开宠物目录；不引入 Tauri/WebView2，关闭 picker 不结束桌宠。
+- 右键菜单保持“选择宠物/退出”，托盘保持“选择宠物/唤醒/退出”；热切宠物先解码图集再持久化，损坏角色不会污染已选状态。
+- Rust workspace 统一版本为 `0.1.3`；38 个集成契约测试、全 workspace Clippy `-D warnings`、Windows x64 交叉检查和 production release build 通过。
+- 新增 `native/scripts/package-windows.ps1`：强制 25/25 资源、EXE ≤20 MiB、资源 ≤65 MiB、ZIP ≤90 MiB并输出 artifact JSON；Windows workflow 同时上传完整候选和隔离运行证据脚本。
+- 生产 workspace 为 `x86_64-pc-windows-msvc` 静态链接 CRT；包脚本和运行证据脚本会拒绝仍导入 `VCRUNTIME140`、`MSVCP140` 或 `ucrtbase` 的便携 EXE，避免全新 Windows 需要另装 VC++ 运行库。
+- 2026-07-16 退役 P0 后的 dirty-worktree VM 候选：静态 CRT x86-64 GUI EXE 1,566,208 字节，完整 25 宠物 ZIP 61,976,335 字节；ZIP 结构和完整性通过，SHA256 为 `b9819a607488a0e17dc3c696079d33c81fff02f22feec12cddadf67a0f7afe5e`。它是 macOS `cargo-xwin` 的早期验证包，Windows CI 仍需按同一源码重建并生成正式 artifact JSON。
+- 新增隔离运行脚本：使用包副本和临时 `APPDATA`/`LOCALAPPDATA`，备份/恢复真实 Run 值；脚本构造一个旧版自定义宠物和设置，要求原生启动后保留旧源、恢复选择/尺寸、再消费 25 个内置角色，同时检查窗口/托盘/欢迎气泡和重复实例并留下 JSON 证据。
+- 原生候选收口后重新运行 Electron `preflight` 与真实开发态 smoke，25 个资源、构建、双窗口、选择持久化和回滚启动路径均通过；Windows 发布入口尚未切换。
+- ADR-0007 已从 Tauri/WebView2 候选修订为全 Win32 架构；`docs/windows-native-migration.md` 固化功能对照、VM/实机清单、分阶段发布和 Electron 回滚路径。
+- 完整候选落地后删除单角色 P0 crate、生产宿主 P0 身份分支和 P0 artifact；Windows workflow 只验证/打包 `native/` 生产工作区，并新增最终 ZIP 解压、双 SHA、资源、架构、提交 SHA 与 clean-worktree 校验。
+- Windows 11 ARM64 UTM 已完成 OOBE 与 Guest Tools 安装；最终 ZIP 在来宾侧核对为 61,976,335 字节、SHA256 `b9819a607488a0e17dc3c696079d33c81fff02f22feec12cddadf67a0f7afe5e`，x64 EXE 可由 Windows 11 ARM64 仿真正常运行。
+- 单屏人工验收已通过透明渲染、可见像素点击与 click 气泡、分段拖拽、直接缩放、宠物右键菜单、picker 搜索/分页/预览/确认、管理宠物目录、托盘识别与“唤醒”，并确认 25 个内置宠物加 1 个迁移夹具进入选择器。自启开关可写入并保持勾选。
+- 按本轮收口决定停止剩余虚拟机操作；登录后自启再拖动、透明角穿透、重启尺寸恢复、混合 DPI/负坐标多屏和真实 x64 仍是未验证项。ARM64 仿真结果只作为早期证据，不触发 Windows Release 或站点下载入口切换。
+
+## 2026-07-15
+
+### Windows 原生桌宠 P0（代码完成，待 Windows 真机验收）
+
+- 在 `spikes/windows-native-pet/` 新增与 Electron 主线隔离的 Rust/Win32 原型，复用现有 8×9 WebP atlas 契约和一个七秀角色。
+- 原生 layered window 使用 premultiplied BGRA 绘制，并按当前帧 alpha 生成 window region；透明像素由系统穿透，可见像素接收交互。
+- 拖动统一使用 Win32 capture、物理屏幕光标和单一 `SetWindowPos` 写入；几何逻辑覆盖抓取偏移、负坐标副屏、工作区边界与 96–192 DPI。
+- 加入 Per-Monitor V2 DPI、无控制台 GUI subsystem、命名 mutex 单实例、HKCU `Run` 自启安装/移除和 `%LOCALAPPDATA%` 启动日志。
+- 新增 Windows workflow，运行格式检查、Windows 单测、release build、SHA256/体积记录，并把单宠物 P0 EXE 预算限定为 15 MiB。
+- 新增 PowerShell 证据脚本和真机验收清单；当前 macOS 主机 7 个 atlas/几何单测通过，`x86_64-pc-windows-msvc` 编译与 Clippy 检查零告警通过。
+- 本机通过临时 `cargo-xwin` 成功链接静态 CRT 的 x64 Windows GUI EXE；PE 导入表不再依赖 Visual C++ Redistributable，EXE 为 3,267,072 字节，含说明、哈希元数据与证据脚本的测试 ZIP 为 3,019,109 字节。
+- ADR-0007 记录候选完整架构、90 MiB 最终 ZIP 预算和功能等价门槛；P0 真机通过前不修改 Electron 发布主线。
 
 ## 2026-07-13
 

@@ -2,6 +2,8 @@
 
 本清单验证当前 Desktop Pet MVP 的 picker-only 双窗口、选宠持久化、内置资源和打包产物。自动 smoke 是发布前硬门禁；人工 smoke 补充透明窗口、原生交互和平台外观检查。
 
+本页主体仍是 Electron/macOS 与当前公开发布门禁。Windows Rust/Win32 候选必须额外完成 [windows-native-migration.md](windows-native-migration.md)；在该清单全部有证据前，不得用原生 ZIP 覆盖公开 Electron Windows 资产。
+
 ## Before Smoke
 
 从仓库根目录运行：
@@ -63,7 +65,7 @@ npm run dev
 - 桌宠保持在普通应用窗口上方。
 - 可见 sprite 能被点击和拖拽；透明 atlas 像素不会拦截后方窗口。
 - 拖到工作区四边时，可见 sprite 能到达边缘且不会跳回透明窗口中心。
-- 快速拖动后惯性停止在屏幕内。
+- 快速拖动并松手后立即停在当前位置，不继续惯性滑动，也不跳出工作区。
 - 单击而未拖动时播放挥手，并显示 `click` 气泡。
 - 完成拖拽后回到 idle，并显示 `drag` 气泡。
 - 右键桌宠只显示选择宠物和退出。
@@ -131,3 +133,13 @@ npm run dev
   | Windows |  |  |  |
 
 - Manual result：逐节记录通过项与平台例外。
+
+## Windows Native Candidate
+
+在 Windows 本机运行 Rust 门禁、`native/scripts/package-windows.ps1`、`native/scripts/verify-windows-package.ps1` 和隔离运行脚本；随后逐项验证拖拽、alpha、四态、气泡、picker、托盘、自启、100%–200% DPI、负坐标与混合 DPI 多屏。证据至少包含：
+
+- `DesktopPet-Windows-x64.artifact.json` 与 ZIP SHA256；
+- `runtime-evidence.json` 和 `%LOCALAPPDATA%\DesktopPet\desktop-pet.log`；
+- Windows 架构、版本、缩放、显示器布局及手工结果；
+- 登录启动后的 `source=autostart`、`window_visible` 和可拖动结果；
+- 真实 Windows x64 复核与 Electron ZIP 回滚演练。

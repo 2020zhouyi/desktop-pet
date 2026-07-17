@@ -1,0 +1,82 @@
+name: Windows Native Runtime
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - "codex/**"
+    paths:
+      - ".github/workflows/windows-native.yml"
+      - "native/**"
+      - "pets/**"
+      - "package.json"
+  pull_request:
+    paths:
+      - ".github/workflows/windows-native.yml"
+      - "native/**"
+      - "pets/**"
+      - "package.json"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Validate and package x64 runtime
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: native
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Prepare stable Rust
+        shell: pwsh
+        run: |
+          rustup update stable
+          rustup default stable
+          rustup component add rustfmt clippy
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run workspace tests
+        run: cargo test --workspace --locked
+
+      - name: Lint workspace
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: Build production executable
+        run: cargo build -p desktop-pet-windows --release --locked
+
+      - name: Package full Windows candidate
+        working-directory: .
+        shell: pwsh
+        run: .\native\scripts\package-windows.ps1 -SkipBuild
+
+      - name: Verify final archive and metadata
+        working-directory: .
+        shell: pwsh
+        run: |
+          $expectedVersion = (Get-Content .\package.json -Raw | ConvertFrom-Json).version
+          .\native\scripts\verify-windows-package.ps1 `
+            -ArchivePath .\native\target\package\DesktopPet-Windows-x64.zip `
+            -MetadataPath .\native\target\package\DesktopPet-Windows-x64.artifact.json `
+            -ExpectedVersion $expectedVersion `
+            -ExpectedGitSha "${{ github.sha }}" `
+            -RequireCleanWorktree
+
+      - name: Upload full Windows native candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: DesktopPet-Windows-x64
+          path: |
+            native/target/package/DesktopPet-Windows-x64.zip
+            native/target/package/DesktopPet-Windows-x64.artifact.json
+            native/scripts/verify-windows-package.ps1
+            native/scripts/verify-windows-runtime.ps1
+          if-no-files-found: error
+          retention-days: 14

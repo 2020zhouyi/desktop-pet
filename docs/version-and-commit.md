@@ -5,6 +5,7 @@
 ## 版本管理
 
 - `package.json` 的 `version` 是应用版本号唯一来源。
+- `native/Cargo.toml` 的 workspace 版本必须与 `package.json` 同步；Windows artifact JSON 直接读取 `package.json`，不得手写另一个发布版本。
 - 当前使用 `0.x.y` MVP 版本线：
   - `0.x.0`：新增明确用户价值或改变产品契约。
   - `0.x.y`：修复、视觉优化、资源整理和打包修正。
@@ -101,6 +102,8 @@ npm run build
 
 CI 使用 `npm ci` 和 `npm run preflight`，不生成 release，也不替代真实 Electron smoke 与人工平台验收。
 
+Windows 原生改动还必须运行 workspace 测试、Clippy `-D warnings` 和 Windows 本机构建/包体门禁；macOS `cargo xwin` 只能证明 x64 PE 可编译，不能替代真实 Windows HWND、登录启动、DPI 与多屏验收。完整命令见 [windows-native-migration.md](windows-native-migration.md)。
+
 ## 人工验收清单
 
 ### PetWindow
@@ -157,6 +160,7 @@ preflight -> clean desktop-pet-mvp/release -> dist:all -> package:verify
 - macOS 当前 `identity=null`；本地包不等于完成签名和公证的公开发行包。
 - macOS 产物为 DMG；Windows 产物为便携 ZIP，不发布 NSIS 安装器。
 - 最后按 `release-smoke.md` 记录双窗口、bounds、持久化、资源和平台结果。
+- 原生 Windows ZIP 只有在 `windows-native-migration.md` 的 VM、真实 x64、artifact、下载链接和回滚检查全部通过后，才可替换 Electron Windows ZIP。
 
 ## 宠物资源
 
