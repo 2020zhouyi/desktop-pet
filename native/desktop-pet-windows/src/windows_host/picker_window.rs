@@ -698,7 +698,7 @@ unsafe fn draw_pet_preview(
             biPlanes: 1,
             biBitCount: 32,
             biCompression: BI_RGB,
-            biSizeImage: (preview.width() * preview.height() * 4) as u32,
+            biSizeImage: preview.width() * preview.height() * 4,
             ..BITMAPINFOHEADER::default()
         },
         ..BITMAPINFO::default()
