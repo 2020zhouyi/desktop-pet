@@ -23,12 +23,12 @@
 
 前往 [Releases](https://github.com/2020zhouyi/desktop-pet/releases/latest) 下载对应平台文件：
 
-- macOS：`Desktop.Pet.MVP-0.1.3-mac-arm64.dmg`
-- Windows：`Desktop.Pet.MVP-0.1.3-win-x64.zip`
+- macOS：`Desktop.Pet.MVP-0.1.4-mac-arm64.dmg`
+- Windows：`Desktop.Pet.MVP-0.1.4-win-x64.zip`
 
 macOS 构建暂未进行 Apple 签名和公证。如果系统阻止首次启动，请在“系统设置 → 隐私与安全性”中确认打开。
 
-Windows 版本无需安装：解压完整 ZIP 后运行其中的 `Desktop Pet MVP.exe`，不要只把单独的 `.exe` 拿出目录。
+Windows 版本无需安装：解压完整 ZIP 后运行其中的 `DesktopPet.exe`，不要只把单独的 `.exe` 拿出目录。
 
 两个平台包都离线包含全部 25 个角色。首次运行会把这些资源迁移到统一宠物目录；以后程序只读取该目录。你可以在“管理宠物”打开的文件夹中直接添加、改名或删除角色，删掉的内置角色不会在重启后自动恢复。
 

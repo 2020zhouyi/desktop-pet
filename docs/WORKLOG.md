@@ -6,7 +6,7 @@
 - 两条实现都保持透明 `PetWindow`、picker-only 控制窗、四态直接交互、四类气泡、25 个离线宠物和同一三字段设置契约。
 - 运行时只读统一用户宠物目录：Electron 使用 `userData/pets/`，原生 Windows 使用 `%LOCALAPPDATA%/DesktopPet/pets/`；发布种子只消费一次。
 - Electron 发布闭环仍是 `npm run release:gate` -> `docs/release-smoke.md`；原生 Windows 使用 Rust workspace 门禁、`native/scripts/package-windows.ps1`、隔离运行证据脚本和 `docs/windows-native-migration.md`。
-- 当前发布版本以 `package.json` 的 `0.1.3` 为唯一来源。
+- 当前发布版本以 `package.json` 的 `0.1.4` 为唯一来源。
 
 ## 2026-07-18
 
@@ -36,7 +36,7 @@
 - 生产 Win32 宿主已实现 layered `PetWindow`、独立 click-through 气泡 HWND、Per-Monitor V2 DPI、捕获式拖拽、直接缩放、单实例 mutex、HKCU `Run` 自启、托盘和 `%LOCALAPPDATA%` 事件日志。
 - 新增完全原生 `PickerWindow`，包含搜索、4×2 分页、真实角色缩略图、预览/确认两阶段选择、自启勾选和打开宠物目录；不引入 Tauri/WebView2，关闭 picker 不结束桌宠。
 - 右键菜单保持“选择宠物/退出”，托盘保持“选择宠物/唤醒/退出”；热切宠物先解码图集再持久化，损坏角色不会污染已选状态。
-- Rust workspace 统一版本为 `0.1.3`；38 个集成契约测试、全 workspace Clippy `-D warnings`、Windows x64 交叉检查和 production release build 通过。
+- Rust workspace 首个完整候选统一版本为 `0.1.3`；38 个集成契约测试、全 workspace Clippy `-D warnings`、Windows x64 交叉检查和 production release build 通过。
 - 新增 `native/scripts/package-windows.ps1`：强制 25/25 资源、EXE ≤20 MiB、资源 ≤65 MiB、ZIP ≤90 MiB并输出 artifact JSON；Windows workflow 同时上传完整候选和隔离运行证据脚本。
 - 生产 workspace 为 `x86_64-pc-windows-msvc` 静态链接 CRT；包脚本和运行证据脚本会拒绝仍导入 `VCRUNTIME140`、`MSVCP140` 或 `ucrtbase` 的便携 EXE，避免全新 Windows 需要另装 VC++ 运行库。
 - 2026-07-16 退役 P0 后的 dirty-worktree VM 候选：静态 CRT x86-64 GUI EXE 1,566,208 字节，完整 25 宠物 ZIP 61,976,335 字节；ZIP 结构和完整性通过，SHA256 为 `b9819a607488a0e17dc3c696079d33c81fff02f22feec12cddadf67a0f7afe5e`。它是 macOS `cargo-xwin` 的早期验证包，Windows CI 仍需按同一源码重建并生成正式 artifact JSON。
