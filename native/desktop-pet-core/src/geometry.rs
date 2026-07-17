@@ -31,6 +31,10 @@ impl RectI {
     pub fn height(self) -> i32 {
         self.bottom - self.top
     }
+
+    pub fn contains(self, point: PointI) -> bool {
+        point.x >= self.left && point.y >= self.top && point.x < self.right && point.y < self.bottom
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -106,6 +110,32 @@ pub fn centered_resize_position(
     }
 }
 
+pub fn anchored_resize_handle_rect(
+    visible_bounds: RectI,
+    window_size: SizeI,
+    requested_handle_size: i32,
+) -> RectI {
+    let window_width = window_size.width.max(1);
+    let window_height = window_size.height.max(1);
+    let handle_size = requested_handle_size
+        .max(1)
+        .min(window_width)
+        .min(window_height);
+    let overlap = (handle_size / 2).max(1);
+    let visible_right = visible_bounds.right.clamp(1, window_width);
+    let visible_bottom = visible_bounds.bottom.clamp(1, window_height);
+    let right = (visible_right + overlap).clamp(handle_size, window_width);
+    let bottom = (visible_bottom + overlap).clamp(handle_size, window_height);
+    let left = (right - handle_size).clamp(0, window_width - handle_size);
+    let top = (bottom - handle_size).clamp(0, window_height - handle_size);
+    RectI {
+        left,
+        top,
+        right: left + handle_size,
+        bottom: top + handle_size,
+    }
+}
+
 pub fn bubble_position(
     pet_bounds: RectI,
     bubble_size: SizeI,
@@ -128,6 +158,32 @@ pub fn bubble_position(
             work_area.right - bubble_size.width,
         ),
         y: clamp_axis(y, work_area.top, work_area.bottom - bubble_size.height),
+    }
+}
+
+pub fn bubble_size_for_content(
+    content_size: SizeI,
+    minimum: SizeI,
+    maximum: SizeI,
+    padding: SizeI,
+) -> SizeI {
+    let minimum_width = minimum.width.max(1);
+    let minimum_height = minimum.height.max(1);
+    let maximum_width = maximum.width.max(minimum_width);
+    let maximum_height = maximum.height.max(minimum_height);
+    let horizontal_padding = padding.width.max(0).saturating_mul(2);
+    let vertical_padding = padding.height.max(0).saturating_mul(2);
+    SizeI {
+        width: content_size
+            .width
+            .max(0)
+            .saturating_add(horizontal_padding)
+            .clamp(minimum_width, maximum_width),
+        height: content_size
+            .height
+            .max(0)
+            .saturating_add(vertical_padding)
+            .clamp(minimum_height, maximum_height),
     }
 }
 

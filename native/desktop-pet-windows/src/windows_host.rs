@@ -11,8 +11,9 @@ use desktop_pet_core::bubbles::{
     BubbleCadence, add_recent_bubble_text, bubble_lines_for_scene, select_bubble_line,
 };
 use desktop_pet_core::geometry::{
-    DragSession, PointI, RectI, SizeI, bubble_position, centered_resize_position, drag_position,
-    physical_px, rescale_drag_session, snap_mascot_width,
+    DragSession, PointI, RectI, SizeI, anchored_resize_handle_rect, bubble_position,
+    bubble_size_for_content, centered_resize_position, drag_position, physical_px,
+    rescale_drag_session, snap_mascot_width,
 };
 use desktop_pet_core::manifest::BubbleScene;
 use desktop_pet_core::picker::PickerState;
@@ -28,7 +29,6 @@ use std::io::Write;
 use std::mem::size_of;
 use std::os::windows::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::ptr::{copy_nonoverlapping, null, null_mut};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
@@ -39,12 +39,13 @@ use windows_sys::Win32::Foundation::{
 };
 use windows_sys::Win32::Graphics::Gdi::{
     AC_SRC_ALPHA, AC_SRC_OVER, BI_RGB, BITMAPINFO, BITMAPINFOHEADER, BLENDFUNCTION, BeginPaint,
-    CombineRgn, CreateCompatibleDC, CreateDIBSection, CreatePen, CreateRectRgn, CreateRoundRectRgn,
-    CreateSolidBrush, DEFAULT_GUI_FONT, DIB_RGB_COLORS, DT_CENTER, DT_NOPREFIX, DT_VCENTER,
-    DT_WORDBREAK, DeleteDC, DeleteObject, DrawTextW, EndPaint, GetDC, GetMonitorInfoW,
-    GetStockObject, InvalidateRect, MONITOR_DEFAULTTONEAREST, MONITORINFO, MonitorFromPoint,
-    PAINTSTRUCT, PS_SOLID, RGN_ERROR, RGN_OR, ReleaseDC, RoundRect, SelectObject, SetBkMode,
-    SetTextColor, SetWindowRgn, TRANSPARENT,
+    CLEARTYPE_QUALITY, CLIP_DEFAULT_PRECIS, CombineRgn, CreateCompatibleDC, CreateDIBSection,
+    CreateFontW, CreatePen, CreateRectRgn, CreateRoundRectRgn, CreateSolidBrush, DEFAULT_CHARSET,
+    DEFAULT_GUI_FONT, DEFAULT_PITCH, DIB_RGB_COLORS, DT_CALCRECT, DT_CENTER, DT_NOPREFIX,
+    DT_SINGLELINE, DT_WORDBREAK, DeleteDC, DeleteObject, DrawTextW, EndPaint, FF_DONTCARE,
+    FW_NORMAL, GetDC, GetMonitorInfoW, GetStockObject, InvalidateRect, MONITOR_DEFAULTTONEAREST,
+    MONITORINFO, MonitorFromPoint, OUT_DEFAULT_PRECIS, PAINTSTRUCT, PS_SOLID, RGN_ERROR, RGN_OR,
+    ReleaseDC, RoundRect, SelectObject, SetBkMode, SetTextColor, SetWindowRgn, TRANSPARENT,
 };
 use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows_sys::Win32::System::Registry::{
@@ -62,19 +63,20 @@ use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
 };
 use windows_sys::Win32::UI::Shell::{
     NIF_ICON, NIF_MESSAGE, NIF_TIP, NIM_ADD, NIM_DELETE, NOTIFYICONDATAW, Shell_NotifyIconW,
+    ShellExecuteW,
 };
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     AppendMenuW, CS_HREDRAW, CS_VREDRAW, CreatePopupMenu, CreateWindowExW, DefWindowProcW,
     DestroyMenu, DestroyWindow, DispatchMessageW, GetClientRect, GetCursorPos, GetMessageW,
-    GetWindowRect, HWND_TOPMOST, IDC_ARROW, IDI_APPLICATION, KillTimer, LoadCursorW, LoadIconW,
-    MA_NOACTIVATE, MF_SEPARATOR, MF_STRING, MSG, PostMessageW, PostQuitMessage, RegisterClassW,
-    RegisterWindowMessageW, SW_HIDE, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE,
-    SWP_SHOWWINDOW, SetForegroundWindow, SetTimer, SetWindowPos, ShowWindow, TPM_NONOTIFY,
-    TPM_RETURNCMD, TPM_RIGHTBUTTON, TrackPopupMenu, TranslateMessage, ULW_ALPHA,
-    UpdateLayeredWindow, WM_APP, WM_CAPTURECHANGED, WM_CLOSE, WM_DESTROY, WM_DPICHANGED,
-    WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEACTIVATE, WM_MOUSEMOVE, WM_PAINT, WM_RBUTTONUP, WM_TIMER,
-    WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_EX_TRANSPARENT,
-    WS_POPUP,
+    GetWindowRect, HWND_TOPMOST, IDC_ARROW, IDC_SIZENWSE, IDI_APPLICATION, KillTimer, LoadCursorW,
+    LoadIconW, MA_NOACTIVATE, MF_SEPARATOR, MF_STRING, MSG, PostMessageW, PostQuitMessage,
+    RegisterClassW, RegisterWindowMessageW, SW_HIDE, SW_SHOWNOACTIVATE, SW_SHOWNORMAL,
+    SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW, SetCursor, SetForegroundWindow,
+    SetTimer, SetWindowPos, ShowWindow, TPM_NONOTIFY, TPM_RETURNCMD, TPM_RIGHTBUTTON,
+    TrackPopupMenu, TranslateMessage, ULW_ALPHA, UpdateLayeredWindow, WM_APP, WM_CAPTURECHANGED,
+    WM_CLOSE, WM_DESTROY, WM_DPICHANGED, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEACTIVATE,
+    WM_MOUSEMOVE, WM_PAINT, WM_RBUTTONUP, WM_SETCURSOR, WM_TIMER, WNDCLASSW, WS_EX_LAYERED,
+    WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_EX_TRANSPARENT, WS_POPUP,
 };
 
 const AUTOSTART_RUN_KEY: &str = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
@@ -83,17 +85,25 @@ const BUBBLE_WINDOW_CLASS_NAME: &str = "DesktopPetBubbleWindow";
 const FRAME_TIMER_ID: usize = 1;
 const BUBBLE_TIMER_ID: usize = 2;
 const WELCOME_TIMER_ID: usize = 3;
+const HOVER_LEAVE_TIMER_ID: usize = 4;
 const MENU_EXIT_ID: usize = 10_001;
 const MENU_OPEN_PICKER_ID: usize = 10_002;
 const MENU_WAKE_ID: usize = 10_003;
 const TRAY_ICON_ID: u32 = 1;
 const TRAY_CALLBACK_MESSAGE: u32 = WM_APP + 1;
 const DIRECTIONAL_DRAG_THRESHOLD_PX: i32 = 4;
-const RESIZE_HANDLE_LOGICAL_PX: i32 = 24;
-const BUBBLE_WIDTH_LOGICAL_PX: i32 = 300;
-const BUBBLE_HEIGHT_LOGICAL_PX: i32 = 96;
+const RESIZE_HANDLE_LOGICAL_PX: i32 = 28;
+const HOVER_GRACE_LOGICAL_PX: i32 = 10;
+const HOVER_LEAVE_POLL_MS: u32 = 120;
+const BUBBLE_MIN_WIDTH_LOGICAL_PX: i32 = 120;
+const BUBBLE_MAX_WIDTH_LOGICAL_PX: i32 = 240;
+const BUBBLE_MIN_HEIGHT_LOGICAL_PX: i32 = 44;
+const BUBBLE_MAX_HEIGHT_LOGICAL_PX: i32 = 92;
 const BUBBLE_GAP_LOGICAL_PX: i32 = 10;
-const BUBBLE_PADDING_LOGICAL_PX: i32 = 18;
+const BUBBLE_HORIZONTAL_PADDING_LOGICAL_PX: i32 = 14;
+const BUBBLE_VERTICAL_PADDING_LOGICAL_PX: i32 = 9;
+const BUBBLE_FONT_LOGICAL_PX: i32 = 14;
+const BUBBLE_CORNER_RADIUS_LOGICAL_PX: i32 = 12;
 const BUBBLE_DURATION_MS: u32 = 3_200;
 
 static APP_STATE: OnceLock<Mutex<AppState>> = OnceLock::new();
@@ -132,12 +142,15 @@ struct AppState {
     logical_width: i32,
     pointer: Option<PointerSession>,
     tracking_hover: bool,
+    visible_bounds: RectI,
+    resize_handle_rect: RectI,
     runtime: Runtime,
     bubble_hwnd: usize,
     bubble_text: String,
     recent_bubble_texts: Vec<String>,
     bubble_counter: u64,
     bubble_visible: bool,
+    bubble_size: SizeI,
 }
 
 struct Runtime {
@@ -173,12 +186,28 @@ impl AppState {
             logical_width: runtime.logical_width,
             pointer: None,
             tracking_hover: false,
+            visible_bounds: RectI {
+                left: 0,
+                top: 0,
+                right: 1,
+                bottom: 1,
+            },
+            resize_handle_rect: RectI {
+                left: 0,
+                top: 0,
+                right: 1,
+                bottom: 1,
+            },
             runtime: runtime.runtime,
             bubble_hwnd: 0,
             bubble_text: String::new(),
             recent_bubble_texts: Vec::new(),
             bubble_counter: 0,
             bubble_visible: false,
+            bubble_size: SizeI {
+                width: physical_px(BUBBLE_MIN_WIDTH_LOGICAL_PX, dpi),
+                height: physical_px(BUBBLE_MIN_HEIGHT_LOGICAL_PX, dpi),
+            },
         };
         state.rebuild_frames(dpi);
         state
@@ -197,6 +226,29 @@ impl AppState {
         self.loop_start_index = rendered.loop_start_index;
         self.frame_index %= self.frames.len().max(1);
         let current_size = self.current_size();
+        self.visible_bounds = self
+            .frames
+            .iter()
+            .filter_map(RenderedFrame::hit_bounds)
+            .fold(None, |bounds: Option<RectI>, next| {
+                Some(bounds.map_or(next, |current| RectI {
+                    left: current.left.min(next.left),
+                    top: current.top.min(next.top),
+                    right: current.right.max(next.right),
+                    bottom: current.bottom.max(next.bottom),
+                }))
+            })
+            .unwrap_or(RectI {
+                left: 0,
+                top: 0,
+                right: current_size.width,
+                bottom: current_size.height,
+            });
+        self.resize_handle_rect = anchored_resize_handle_rect(
+            self.visible_bounds,
+            current_size,
+            self.resize_handle_size(),
+        );
         if let (Some(previous_size), Some(pointer)) = (previous_size, self.pointer.as_mut()) {
             pointer.drag = rescale_drag_session(pointer.drag, previous_size, current_size);
         }
@@ -222,12 +274,39 @@ impl AppState {
     }
 
     fn is_resize_handle(&self, local: PointI) -> bool {
+        self.resize_handle_rect.contains(local)
+    }
+
+    fn is_in_hover_grace_area(&self, local: PointI) -> bool {
         let size = self.current_size();
-        let handle = self.resize_handle_size();
-        local.x >= size.width - handle
-            && local.y >= size.height - handle
-            && local.x < size.width
-            && local.y < size.height
+        let padding = physical_px(HOVER_GRACE_LOGICAL_PX, self.dpi);
+        RectI {
+            left: self
+                .visible_bounds
+                .left
+                .min(self.resize_handle_rect.left)
+                .saturating_sub(padding)
+                .max(0),
+            top: self
+                .visible_bounds
+                .top
+                .min(self.resize_handle_rect.top)
+                .saturating_sub(padding)
+                .max(0),
+            right: self
+                .visible_bounds
+                .right
+                .max(self.resize_handle_rect.right)
+                .saturating_add(padding)
+                .min(size.width),
+            bottom: self
+                .visible_bounds
+                .bottom
+                .max(self.resize_handle_rect.bottom)
+                .saturating_add(padding)
+                .min(size.height),
+        }
+        .contains(local)
     }
 
     fn apply_event(&mut self, event: PetEvent) -> bool {
@@ -628,11 +707,26 @@ unsafe fn paint_bubble(hwnd: HWND) {
         return;
     }
 
-    let brush = CreateSolidBrush(color_ref(255, 252, 245));
-    let pen = CreatePen(PS_SOLID, 1, color_ref(116, 107, 96));
+    let dpi = GetDpiForWindow(hwnd).max(96);
+    let brush = CreateSolidBrush(color_ref(255, 253, 249));
+    let pen = CreatePen(
+        PS_SOLID,
+        physical_px(1, dpi).max(1),
+        color_ref(184, 175, 161),
+    );
+    if brush.is_null() || pen.is_null() {
+        if !brush.is_null() {
+            DeleteObject(brush);
+        }
+        if !pen.is_null() {
+            DeleteObject(pen);
+        }
+        EndPaint(hwnd, &paint);
+        return;
+    }
     let old_brush = SelectObject(device, brush);
     let old_pen = SelectObject(device, pen);
-    let radius = physical_px(18, GetDpiForWindow(hwnd).max(96));
+    let radius = physical_px(BUBBLE_CORNER_RADIUS_LOGICAL_PX, dpi);
     RoundRect(
         device,
         bounds.left,
@@ -643,15 +737,22 @@ unsafe fn paint_bubble(hwnd: HWND) {
         radius,
     );
 
-    let old_font = SelectObject(device, GetStockObject(DEFAULT_GUI_FONT));
+    let font = create_bubble_font(dpi);
+    let selected_font = if font.is_null() {
+        GetStockObject(DEFAULT_GUI_FONT)
+    } else {
+        font
+    };
+    let old_font = SelectObject(device, selected_font);
     SetBkMode(device, TRANSPARENT as i32);
-    SetTextColor(device, color_ref(54, 48, 43));
-    let padding = physical_px(BUBBLE_PADDING_LOGICAL_PX, GetDpiForWindow(hwnd).max(96));
+    SetTextColor(device, color_ref(42, 38, 33));
+    let horizontal_padding = physical_px(BUBBLE_HORIZONTAL_PADDING_LOGICAL_PX, dpi);
+    let vertical_padding = physical_px(BUBBLE_VERTICAL_PADDING_LOGICAL_PX, dpi);
     let mut text_bounds = RECT {
-        left: bounds.left + padding,
-        top: bounds.top + padding / 2,
-        right: bounds.right - padding,
-        bottom: bounds.bottom - padding / 2,
+        left: bounds.left + horizontal_padding,
+        top: bounds.top + vertical_padding,
+        right: bounds.right - horizontal_padding,
+        bottom: bounds.bottom - vertical_padding,
     };
     let wide_text = wide(text);
     DrawTextW(
@@ -659,7 +760,7 @@ unsafe fn paint_bubble(hwnd: HWND) {
         wide_text.as_ptr(),
         -1,
         &mut text_bounds,
-        DT_CENTER | DT_VCENTER | DT_WORDBREAK | DT_NOPREFIX,
+        DT_CENTER | DT_WORDBREAK | DT_NOPREFIX,
     );
 
     SelectObject(device, old_font);
@@ -667,7 +768,102 @@ unsafe fn paint_bubble(hwnd: HWND) {
     SelectObject(device, old_brush);
     DeleteObject(pen);
     DeleteObject(brush);
+    if !font.is_null() {
+        DeleteObject(font);
+    }
     EndPaint(hwnd, &paint);
+}
+
+unsafe fn create_bubble_font(dpi: u32) -> *mut c_void {
+    let face = wide("Segoe UI");
+    CreateFontW(
+        -physical_px(BUBBLE_FONT_LOGICAL_PX, dpi),
+        0,
+        0,
+        0,
+        FW_NORMAL as i32,
+        0,
+        0,
+        0,
+        DEFAULT_CHARSET as u32,
+        OUT_DEFAULT_PRECIS as u32,
+        CLIP_DEFAULT_PRECIS as u32,
+        CLEARTYPE_QUALITY as u32,
+        (DEFAULT_PITCH | FF_DONTCARE) as u32,
+        face.as_ptr(),
+    )
+}
+
+unsafe fn measure_bubble_size(hwnd: HWND, text: &str, dpi: u32) -> SizeI {
+    let minimum = SizeI {
+        width: physical_px(BUBBLE_MIN_WIDTH_LOGICAL_PX, dpi),
+        height: physical_px(BUBBLE_MIN_HEIGHT_LOGICAL_PX, dpi),
+    };
+    let maximum = SizeI {
+        width: physical_px(BUBBLE_MAX_WIDTH_LOGICAL_PX, dpi),
+        height: physical_px(BUBBLE_MAX_HEIGHT_LOGICAL_PX, dpi),
+    };
+    let padding = SizeI {
+        width: physical_px(BUBBLE_HORIZONTAL_PADDING_LOGICAL_PX, dpi),
+        height: physical_px(BUBBLE_VERTICAL_PADDING_LOGICAL_PX, dpi),
+    };
+    let device = GetDC(hwnd);
+    if device.is_null() {
+        return minimum;
+    }
+    let font = create_bubble_font(dpi);
+    let selected_font = if font.is_null() {
+        GetStockObject(DEFAULT_GUI_FONT)
+    } else {
+        font
+    };
+    let old_font = SelectObject(device, selected_font);
+    let display_text = if text.trim().is_empty() { " " } else { text };
+    let wide_text = wide(display_text);
+    let mut single_line = RECT::default();
+    DrawTextW(
+        device,
+        wide_text.as_ptr(),
+        -1,
+        &mut single_line,
+        DT_CALCRECT | DT_SINGLELINE | DT_NOPREFIX,
+    );
+    let maximum_content_width = (maximum.width - padding.width * 2).max(1);
+    let content_width = (single_line.right - single_line.left)
+        .max(1)
+        .min(maximum_content_width);
+    let mut wrapped = RECT {
+        left: 0,
+        top: 0,
+        right: content_width,
+        bottom: 0,
+    };
+    DrawTextW(
+        device,
+        wide_text.as_ptr(),
+        -1,
+        &mut wrapped,
+        DT_CALCRECT | DT_WORDBREAK | DT_NOPREFIX,
+    );
+    let content = SizeI {
+        width: content_width,
+        height: (wrapped.bottom - wrapped.top).max(physical_px(BUBBLE_FONT_LOGICAL_PX, dpi)),
+    };
+    SelectObject(device, old_font);
+    if !font.is_null() {
+        DeleteObject(font);
+    }
+    ReleaseDC(hwnd, device);
+    bubble_size_for_content(content, minimum, maximum, padding)
+}
+
+unsafe fn refresh_bubble_size(hwnd: HWND, dpi: u32) {
+    if hwnd.is_null() {
+        return;
+    }
+    let text = with_state(|state| state.bubble_text.clone()).unwrap_or_default();
+    let size = measure_bubble_size(hwnd, &text, dpi);
+    let _ = with_state_mut(|state| state.bubble_size = size);
 }
 
 fn color_ref(red: u8, green: u8, blue: u8) -> u32 {
@@ -686,6 +882,8 @@ unsafe fn show_bubble(pet_hwnd: HWND, scene: BubbleScene) {
     let Some(bubble_hwnd) = bubble_hwnd else {
         return;
     };
+    let dpi = with_state(|state| state.dpi).unwrap_or(96);
+    refresh_bubble_size(bubble_hwnd, dpi);
     position_bubble(pet_hwnd, true, true);
     InvalidateRect(bubble_hwnd, null(), 1);
     KillTimer(pet_hwnd, BUBBLE_TIMER_ID);
@@ -699,9 +897,14 @@ unsafe fn show_bubble(pet_hwnd: HWND, scene: BubbleScene) {
 }
 
 unsafe fn position_bubble(pet_hwnd: HWND, reveal: bool, refresh_region: bool) {
-    let Ok((bubble_hwnd, visible, dpi)) =
-        with_state(|state| (state.bubble_hwnd as HWND, state.bubble_visible, state.dpi))
-    else {
+    let Ok((bubble_hwnd, visible, dpi, size)) = with_state(|state| {
+        (
+            state.bubble_hwnd as HWND,
+            state.bubble_visible,
+            state.dpi,
+            state.bubble_size,
+        )
+    }) else {
         return;
     };
     if bubble_hwnd.is_null() || !visible {
@@ -717,10 +920,6 @@ unsafe fn position_bubble(pet_hwnd: HWND, reveal: bool, refresh_region: bool) {
     let Ok(work_area) = work_area_for(center) else {
         return;
     };
-    let size = SizeI {
-        width: physical_px(BUBBLE_WIDTH_LOGICAL_PX, dpi),
-        height: physical_px(BUBBLE_HEIGHT_LOGICAL_PX, dpi),
-    };
     let position = bubble_position(
         RectI {
             left: pet_rect.left,
@@ -734,7 +933,7 @@ unsafe fn position_bubble(pet_hwnd: HWND, reveal: bool, refresh_region: bool) {
     );
 
     if refresh_region {
-        let radius = physical_px(18, dpi);
+        let radius = physical_px(BUBBLE_CORNER_RADIUS_LOGICAL_PX, dpi);
         let region = CreateRoundRectRgn(0, 0, size.width + 1, size.height + 1, radius, radius);
         if region.is_null() {
             log_event(&format!(
@@ -832,6 +1031,7 @@ unsafe extern "system" fn window_proc(
             0
         }
         WM_MOUSEMOVE => {
+            KillTimer(hwnd, HOVER_LEAVE_TIMER_ID);
             if GetCapture() == hwnd {
                 let resizing = with_state(|state| {
                     state
@@ -847,6 +1047,7 @@ unsafe extern "system" fn window_proc(
             } else {
                 begin_hover_tracking(hwnd);
             }
+            update_pet_cursor(hwnd);
             0
         }
         WM_LBUTTONUP => {
@@ -865,11 +1066,15 @@ unsafe extern "system" fn window_proc(
             0
         }
         WM_MOUSELEAVE => {
-            let _ = with_state_mut(|state| state.tracking_hover = false);
-            if !apply_pet_event(hwnd, PetEvent::HoverLeave) {
-                restart_animation(hwnd);
-            }
+            schedule_hover_leave_check(hwnd);
             0
+        }
+        WM_SETCURSOR => {
+            if update_pet_cursor(hwnd) {
+                1
+            } else {
+                DefWindowProcW(hwnd, message, wparam, lparam)
+            }
         }
         WM_RBUTTONUP => {
             show_context_menu(hwnd);
@@ -892,6 +1097,10 @@ unsafe extern "system" fn window_proc(
             show_bubble(hwnd, BubbleScene::Welcome);
             0
         }
+        WM_TIMER if wparam == HOVER_LEAVE_TIMER_ID => {
+            finish_hover_leave_if_needed(hwnd);
+            0
+        }
         WM_TIMER if wparam == FRAME_TIMER_ID => {
             KillTimer(hwnd, FRAME_TIMER_ID);
             let _ = with_state_mut(|state| state.advance_frame());
@@ -904,6 +1113,8 @@ unsafe extern "system" fn window_proc(
         WM_DPICHANGED => {
             let dpi = (wparam as u32 & 0xffff).max(96);
             let _ = with_state_mut(|state| state.rebuild_frames(dpi));
+            let bubble_hwnd = with_state(|state| state.bubble_hwnd as HWND).unwrap_or(null_mut());
+            refresh_bubble_size(bubble_hwnd, dpi);
             if lparam != 0 {
                 let suggested = *(lparam as *const RECT);
                 if let Ok(size) = with_state(|state| state.current_size()) {
@@ -935,6 +1146,7 @@ unsafe extern "system" fn window_proc(
             KillTimer(hwnd, FRAME_TIMER_ID);
             KillTimer(hwnd, BUBBLE_TIMER_ID);
             KillTimer(hwnd, WELCOME_TIMER_ID);
+            KillTimer(hwnd, HOVER_LEAVE_TIMER_ID);
             PostQuitMessage(0);
             0
         }
@@ -1065,18 +1277,12 @@ unsafe fn finish_drag(hwnd: HWND) {
 }
 
 unsafe fn begin_hover_tracking(hwnd: HWND) {
-    let should_begin = with_state_mut(|state| {
-        if state.tracking_hover {
-            false
-        } else {
-            state.tracking_hover = true;
-            true
-        }
+    let entered = with_state_mut(|state| {
+        let entered = !state.tracking_hover;
+        state.tracking_hover = true;
+        entered
     })
     .unwrap_or(false);
-    if !should_begin {
-        return;
-    }
     let mut tracking = TRACKMOUSEEVENT {
         cbSize: size_of::<TRACKMOUSEEVENT>() as u32,
         dwFlags: TME_LEAVE,
@@ -1084,12 +1290,72 @@ unsafe fn begin_hover_tracking(hwnd: HWND) {
         dwHoverTime: 0,
     };
     if TrackMouseEvent(&mut tracking) == 0 {
-        let _ = with_state_mut(|state| state.tracking_hover = false);
+        if entered {
+            let _ = with_state_mut(|state| state.tracking_hover = false);
+        }
         return;
     }
-    if !apply_pet_event(hwnd, PetEvent::HoverEnter) {
+    if entered && !apply_pet_event(hwnd, PetEvent::HoverEnter) {
         restart_animation(hwnd);
     }
+}
+
+unsafe fn schedule_hover_leave_check(hwnd: HWND) {
+    KillTimer(hwnd, HOVER_LEAVE_TIMER_ID);
+    if SetTimer(hwnd, HOVER_LEAVE_TIMER_ID, HOVER_LEAVE_POLL_MS, None) == 0 {
+        finish_hover_leave_if_needed(hwnd);
+    }
+}
+
+unsafe fn finish_hover_leave_if_needed(hwnd: HWND) {
+    KillTimer(hwnd, HOVER_LEAVE_TIMER_ID);
+    if GetCapture() == hwnd {
+        return;
+    }
+    let still_near = cursor_local_to_window(hwnd).is_some_and(|local| {
+        with_state(|state| state.is_in_hover_grace_area(local)).unwrap_or(false)
+    });
+    if still_near {
+        if SetTimer(hwnd, HOVER_LEAVE_TIMER_ID, HOVER_LEAVE_POLL_MS, None) == 0 {
+            let _ = with_state_mut(|state| state.tracking_hover = false);
+        }
+        return;
+    }
+    let was_hovering = with_state_mut(|state| std::mem::replace(&mut state.tracking_hover, false))
+        .unwrap_or(false);
+    if was_hovering && !apply_pet_event(hwnd, PetEvent::HoverLeave) {
+        restart_animation(hwnd);
+    }
+}
+
+unsafe fn update_pet_cursor(hwnd: HWND) -> bool {
+    let on_resize_handle = cursor_local_to_window(hwnd).is_some_and(|local| {
+        with_state(|state| {
+            (state.tracking_hover
+                || state
+                    .pointer
+                    .is_some_and(|pointer| pointer.resize_start_width.is_some()))
+                && state.is_resize_handle(local)
+        })
+        .unwrap_or(false)
+    });
+    if !on_resize_handle {
+        return false;
+    }
+    let cursor = LoadCursorW(null_mut(), IDC_SIZENWSE);
+    if !cursor.is_null() {
+        SetCursor(cursor);
+    }
+    true
+}
+
+unsafe fn cursor_local_to_window(hwnd: HWND) -> Option<PointI> {
+    let cursor = cursor_position()?;
+    let rect = window_rect(hwnd)?;
+    Some(PointI {
+        x: cursor.x - rect.left,
+        y: cursor.y - rect.top,
+    })
 }
 
 unsafe fn apply_pet_event(hwnd: HWND, event: PetEvent) -> bool {
@@ -1238,20 +1504,14 @@ unsafe fn show_context_menu(hwnd: HWND) {
     }
 }
 
-unsafe fn switch_pet(hwnd: HWND, runtime_id: &str) {
-    match load_and_commit_pet(runtime_id) {
-        Ok(false) => {}
-        Ok(true) => {
-            fit_pet_window_to_current_size(hwnd);
-            restart_animation(hwnd);
-            show_bubble(hwnd, BubbleScene::PetSwitch);
-        }
-        Err(error) => log_event(&format!(
-            "event=pet_switch_error id={} error={}",
-            log_value(runtime_id),
-            log_value(&error),
-        )),
+unsafe fn switch_pet(hwnd: HWND, runtime_id: &str) -> Result<bool, String> {
+    let switched = load_and_commit_pet(runtime_id)?;
+    if switched {
+        fit_pet_window_to_current_size(hwnd);
+        restart_animation(hwnd);
+        show_bubble(hwnd, BubbleScene::PetSwitch);
     }
+    Ok(switched)
 }
 
 fn load_and_commit_pet(runtime_id: &str) -> Result<bool, String> {
@@ -1473,23 +1733,23 @@ unsafe fn schedule_next_frame(hwnd: HWND) -> Result<(), String> {
 }
 
 unsafe fn present_current_frame(hwnd: HWND) -> Result<(), String> {
-    let (frame, show_resize_handle, resize_handle_size) = with_state(|state| {
+    let (frame, resize_handle_rect) = with_state(|state| {
+        let show_resize_handle = state.tracking_hover
+            || state
+                .pointer
+                .is_some_and(|pointer| pointer.resize_start_width.is_some());
         (
             state.current_frame().clone(),
-            state.tracking_hover
-                || state
-                    .pointer
-                    .is_some_and(|pointer| pointer.resize_start_width.is_some()),
-            state.resize_handle_size(),
+            show_resize_handle.then_some(state.resize_handle_rect),
         )
     })?;
-    if show_resize_handle {
-        let rgba = draw_resize_handle(&frame.rgba, resize_handle_size as u32);
+    if let Some(handle_rect) = resize_handle_rect {
+        let rgba = draw_resize_handle(&frame.rgba, handle_rect);
         present_rgba(hwnd, &rgba)?;
     } else {
         present_rgba(hwnd, &frame.rgba)?;
     }
-    apply_alpha_region(hwnd, &frame, show_resize_handle, resize_handle_size)
+    apply_alpha_region(hwnd, &frame, resize_handle_rect)
 }
 
 unsafe fn present_rgba(hwnd: HWND, rgba: &RgbaImage) -> Result<(), String> {
@@ -1587,8 +1847,7 @@ unsafe fn present_rgba(hwnd: HWND, rgba: &RgbaImage) -> Result<(), String> {
 unsafe fn apply_alpha_region(
     hwnd: HWND,
     frame: &RenderedFrame,
-    show_resize_handle: bool,
-    resize_handle_size: i32,
+    resize_handle_rect: Option<RectI>,
 ) -> Result<(), String> {
     let region = CreateRectRgn(0, 0, 0, 0);
     if region.is_null() {
@@ -1623,14 +1882,12 @@ unsafe fn apply_alpha_region(
         }
     }
 
-    if show_resize_handle {
-        let width = frame.width() as i32;
-        let height = frame.height() as i32;
+    if let Some(handle_rect) = resize_handle_rect {
         let handle = CreateRectRgn(
-            width - resize_handle_size,
-            height - resize_handle_size,
-            width,
-            height,
+            handle_rect.left,
+            handle_rect.top,
+            handle_rect.right,
+            handle_rect.bottom,
         );
         if handle.is_null() {
             DeleteObject(region);
@@ -1652,20 +1909,29 @@ unsafe fn apply_alpha_region(
     Ok(())
 }
 
-fn draw_resize_handle(rgba: &RgbaImage, handle_size: u32) -> RgbaImage {
+fn draw_resize_handle(rgba: &RgbaImage, handle_rect: RectI) -> RgbaImage {
     let mut output = rgba.clone();
-    let width = output.width();
-    let height = output.height();
-    let max_inset = handle_size.min(width).min(height);
+    let left = handle_rect.left.max(0) as u32;
+    let top = handle_rect.top.max(0) as u32;
+    let right = handle_rect
+        .right
+        .clamp(handle_rect.left, output.width() as i32) as u32;
+    let bottom = handle_rect
+        .bottom
+        .clamp(handle_rect.top, output.height() as i32) as u32;
+    let max_inset = (right - left).min(bottom - top);
     for inset in [6_u32, 11, 16] {
-        if inset >= max_inset || inset >= width || inset >= height {
+        if inset >= max_inset {
             continue;
         }
         for step in 0..inset.saturating_sub(3) {
-            let x = width - inset + step;
-            let y = height - 3 - step;
+            let x = right - inset + step;
+            let y = bottom - 3 - step;
+            if x < left || y < top || x >= right || y >= bottom {
+                continue;
+            }
             output.get_pixel_mut(x, y).0 = [70, 70, 70, 170];
-            if y + 1 < height {
+            if y + 1 < bottom {
                 output.get_pixel_mut(x, y + 1).0 = [70, 70, 70, 120];
             }
         }
@@ -1941,14 +2207,27 @@ fn set_launch_at_login_enabled(enabled: bool) -> Result<(), String> {
     Ok(())
 }
 
-fn open_pet_library() -> Result<(), String> {
+unsafe fn open_pet_library(owner: HWND) -> Result<(), String> {
     let pets_root = with_state(|state| state.runtime.paths.pets_root.clone())?;
     fs::create_dir_all(&pets_root)
         .map_err(|error| format!("failed to create {}: {error}", pets_root.display()))?;
-    Command::new("explorer.exe")
-        .arg(&pets_root)
-        .spawn()
-        .map_err(|error| format!("failed to open {}: {error}", pets_root.display()))?;
+    let operation = wide("open");
+    let path = wide(pets_root.as_os_str());
+    let result = ShellExecuteW(
+        owner,
+        operation.as_ptr(),
+        path.as_ptr(),
+        null(),
+        null(),
+        SW_SHOWNORMAL,
+    );
+    if result as isize <= 32 {
+        return Err(format!(
+            "failed to open {}: ShellExecuteW returned {}",
+            pets_root.display(),
+            result as isize,
+        ));
+    }
     log_event(&format!(
         "event=pet_library_opened path={}",
         log_value(&pets_root.display().to_string()),

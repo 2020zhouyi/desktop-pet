@@ -5,7 +5,7 @@
 use desktop_pet_core::animation::{
     ATLAS_COLUMNS, ATLAS_ROWS, CELL_HEIGHT, CELL_WIDTH, sequence_for,
 };
-use desktop_pet_core::geometry::{SizeI, scaled_size};
+use desktop_pet_core::geometry::{RectI, SizeI, scaled_size};
 use desktop_pet_core::state::PetState;
 use image::ImageError;
 use image::imageops::FilterType;
@@ -225,6 +225,32 @@ impl RenderedFrame {
 
     pub fn hit_test(&self, x: u32, y: u32) -> bool {
         self.alpha_at(x, y) > ALPHA_HIT_THRESHOLD
+    }
+
+    pub fn hit_bounds(&self) -> Option<RectI> {
+        let mut left = self.width();
+        let mut top = self.height();
+        let mut right = 0;
+        let mut bottom = 0;
+        let mut found = false;
+        for y in 0..self.height() {
+            for x in 0..self.width() {
+                if !self.hit_test(x, y) {
+                    continue;
+                }
+                found = true;
+                left = left.min(x);
+                top = top.min(y);
+                right = right.max(x + 1);
+                bottom = bottom.max(y + 1);
+            }
+        }
+        found.then_some(RectI {
+            left: left as i32,
+            top: top as i32,
+            right: right as i32,
+            bottom: bottom as i32,
+        })
     }
 }
 

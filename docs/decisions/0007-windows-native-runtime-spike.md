@@ -37,7 +37,7 @@ P0 验证层完成后，生产候选继续复用同一 Win32 宿主，而不是�
 
 单角色 P0 的职责已经被完整候选覆盖，因此其包装 crate、独立身份分支和 CI 产物已删除。历史结论保留在本 ADR 与工作日志中，生产源码只维护 `native/desktop-pet-windows`。
 
-实现阶段放弃了 Tauri/WebView2 picker：当前 picker 只有搜索、4×2 分页、预览确认、自启勾选和打开目录，使用原生 Win32 控件即可完整覆盖。这样不需要随包携带 WebView 前端或依赖目标机 WebView2 状态，也避免再次把输入、窗口生命周期和配置分散到 Rust/JS 两侧。现有 React picker 仍保留在 Electron 回滚主线中，不要求玩家资源迁移。
+实现阶段放弃了 Tauri/WebView2 picker：当前 picker 只有搜索、4×2 分页、预览确认、自启开关和打开目录，使用 Win32 HWND 与 GDI 自绘即可完整覆盖。正文区使用自有语义色、圆角卡片、按钮和 toggle，只有搜索输入保留原生 `EDIT` 以承接中文输入法和键盘语义；这样既不暴露默认 Windows 控件皮肤，也不需要随包携带 WebView 前端或依赖目标机 WebView2 状态，并避免再次把输入、窗口生命周期和配置分散到 Rust/JS 两侧。现有 React picker 仍保留在 Electron 回滚主线中，不要求玩家资源迁移。
 
 完整 Windows 离线包仍保留当前 25 个宠物。体积预算按来源拆分：原生宿主与控制 UI 不超过 20 MiB，宠物资源不超过 65 MiB，最终 ZIP 目标不超过 90 MiB。便携 EXE 静态链接 MSVC CRT，包门禁拒绝动态 VC++ 运行库依赖。若未来改为基础角色加按需宠物包，可另行降低首次下载体积，但不属于本次功能等价迁移。
 
@@ -60,7 +60,7 @@ P0 验证层完成后，生产候选继续复用同一 Win32 宿主，而不是�
 
 ## 验证与止损
 
-- 自动：共享 workspace 的 38 个契约测试覆盖 25 个资源、三类图集、四态、动画、气泡、picker、几何、设置、Electron 旧数据导入、统一宠物库与渲染；Clippy 使用 `-D warnings`；Windows CI 运行生产 MSVC build，并执行 20/65/90 MiB 三级体积预算与最终 ZIP 完整性校验。
+- 自动：共享 workspace 的 41 个契约测试覆盖 25 个资源、三类图集、四态、动画、气泡、picker、alpha 外接区域与缩放锚点、几何、设置、Electron 旧数据导入、统一宠物库与渲染；Clippy 使用 `-D warnings`；Windows CI 运行生产 MSVC build，并执行 20/65/90 MiB 三级体积预算与最终 ZIP 完整性校验。
 - VM：`native/scripts/verify-windows-runtime.ps1` 在隔离的 `LOCALAPPDATA` 和包副本中检查首启、25 个资源消费、窗口/托盘/欢迎气泡日志和重复实例；人工验证拖拽、alpha、缩放、picker、自启、DPI 与跨屏。
 - 实机：ARM64 Windows 中的 x64 仿真只做早期验证；主线切换前仍需真实 Windows x64 或等价 x64 CI/硬件完成登录启动、混合 DPI 和多屏检查。
 - 通过：把原生 Windows ZIP 作为独立 canary 资产发布；观察通过后再让站点 Windows 下载入口指向原生包。
@@ -71,6 +71,6 @@ P0 验证层完成后，生产候选继续复用同一 Win32 宿主，而不是�
 ## 取舍
 
 - 增加了 Rust/Win32 专用代码和 Windows CI，维护者需要能检查少量 unsafe FFI。
-- `PetWindow` 与 picker 都不依赖 WebView，包体和窗口状态更可控，但选择器视觉由原生 GDI/控件维护；当前候选保留系统标题栏，与 Electron frameless picker 存在外观差异，功能契约不变。
+- `PetWindow` 与 picker 都不依赖 WebView，包体和窗口状态更可控；选择器正文由 GDI 自绘以避免默认控件皮肤，但仍保留系统标题栏和原生输入框，因此与 Electron frameless picker 存在平台外观差异，功能契约不变。
 - 首次启动会把可写包副本中的 `pets-seed` 移到用户目录；只读安装位置回退为复制并忽略源清理失败。
 - 当前候选尚未经过 Windows VM 全项验收、真实 x64 多屏验收或代码签名，因此不能替代当前 Electron 公开安装包。

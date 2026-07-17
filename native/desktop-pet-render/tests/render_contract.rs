@@ -1,6 +1,8 @@
 use desktop_pet_core::animation::{CELL_HEIGHT, CELL_WIDTH};
 use desktop_pet_core::state::PetState;
-use desktop_pet_render::{ALPHA_HIT_THRESHOLD, Atlas, RgbaImage, decode_first_valid_atlas};
+use desktop_pet_render::{
+    ALPHA_HIT_THRESHOLD, Atlas, RenderedFrame, RgbaImage, decode_first_valid_atlas,
+};
 use image::ImageEncoder;
 use std::fs;
 use std::path::PathBuf;
@@ -49,6 +51,39 @@ fn caches_repeated_action_cells_and_preserves_alpha_hit_testing() {
     assert!(hit_pixels > 0);
     assert!(hit_pixels < (frame.width() * frame.height()) as usize);
     assert!(!frame.hit_test(0, 0));
+    let bounds = frame.hit_bounds().expect("visible sprite bounds");
+    assert!(bounds.left >= 0 && bounds.top >= 0);
+    assert!(bounds.right <= frame.width() as i32);
+    assert!(bounds.bottom <= frame.height() as i32);
+    assert!(bounds.width() > 0 && bounds.height() > 0);
+}
+
+#[test]
+fn reports_tight_alpha_hit_bounds_for_resize_affordances() {
+    let mut rgba = RgbaImage::new(12, 10);
+    rgba.put_pixel(3, 2, image::Rgba([10, 20, 30, ALPHA_HIT_THRESHOLD + 1]));
+    rgba.put_pixel(8, 7, image::Rgba([10, 20, 30, 255]));
+    let frame = RenderedFrame {
+        rgba: Arc::new(rgba),
+        duration_ms: 100,
+    };
+    assert_eq!(
+        frame.hit_bounds(),
+        Some(desktop_pet_core::geometry::RectI {
+            left: 3,
+            top: 2,
+            right: 9,
+            bottom: 8,
+        })
+    );
+    assert_eq!(
+        RenderedFrame {
+            rgba: Arc::new(RgbaImage::new(4, 4)),
+            duration_ms: 100,
+        }
+        .hit_bounds(),
+        None
+    );
 }
 
 #[test]

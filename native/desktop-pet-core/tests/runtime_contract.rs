@@ -2,8 +2,9 @@ use desktop_pet_core::animation::{
     ATLAS_COLUMNS, ATLAS_ROWS, CELL_HEIGHT, CELL_WIDTH, action_duration_ms, sequence_for,
 };
 use desktop_pet_core::geometry::{
-    DragSession, PointI, RectI, SizeI, bubble_position, centered_resize_position, drag_position,
-    physical_px, rescale_drag_session, scaled_size, snap_mascot_width,
+    DragSession, PointI, RectI, SizeI, anchored_resize_handle_rect, bubble_position,
+    bubble_size_for_content, centered_resize_position, drag_position, physical_px,
+    rescale_drag_session, scaled_size, snap_mascot_width,
 };
 use desktop_pet_core::state::{
     PetEvent, PetState, directional_drag_event, has_crossed_drag_threshold, transition_pet_state,
@@ -177,6 +178,56 @@ fn snaps_direct_resize_to_the_existing_twelve_pixel_range() {
 }
 
 #[test]
+fn anchors_the_resize_handle_to_visible_pixels_instead_of_transparent_frame_padding() {
+    let handle = anchored_resize_handle_rect(
+        RectI {
+            left: 26,
+            top: 18,
+            right: 92,
+            bottom: 104,
+        },
+        SizeI {
+            width: 120,
+            height: 130,
+        },
+        28,
+    );
+    assert_eq!(
+        handle,
+        RectI {
+            left: 78,
+            top: 90,
+            right: 106,
+            bottom: 118,
+        }
+    );
+    assert!(handle.contains(PointI { x: 90, y: 104 }));
+    assert!(!handle.contains(PointI { x: 77, y: 104 }));
+
+    assert_eq!(
+        anchored_resize_handle_rect(
+            RectI {
+                left: 0,
+                top: 0,
+                right: 8,
+                bottom: 8,
+            },
+            SizeI {
+                width: 16,
+                height: 12,
+            },
+            40,
+        ),
+        RectI {
+            left: 2,
+            top: 0,
+            right: 14,
+            bottom: 12,
+        }
+    );
+}
+
+#[test]
 fn anchors_bubbles_above_the_pet_and_flips_below_at_the_work_area_edge() {
     let work_area = RectI {
         left: -1_920,
@@ -215,5 +266,61 @@ fn anchors_bubbles_above_the_pet_and_flips_below_at_the_work_area_edge() {
             12,
         ),
         PointI { x: -1_920, y: 152 },
+    );
+}
+
+#[test]
+fn keeps_bubbles_compact_while_clamping_long_copy() {
+    let minimum = SizeI {
+        width: 120,
+        height: 44,
+    };
+    let maximum = SizeI {
+        width: 240,
+        height: 92,
+    };
+    let padding = SizeI {
+        width: 14,
+        height: 9,
+    };
+
+    assert_eq!(
+        bubble_size_for_content(
+            SizeI {
+                width: 62,
+                height: 18,
+            },
+            minimum,
+            maximum,
+            padding,
+        ),
+        minimum,
+    );
+    assert_eq!(
+        bubble_size_for_content(
+            SizeI {
+                width: 168,
+                height: 36,
+            },
+            minimum,
+            maximum,
+            padding,
+        ),
+        SizeI {
+            width: 196,
+            height: 54,
+        },
+    );
+    assert_eq!(
+        bubble_size_for_content(
+            SizeI {
+                width: 400,
+                height: 120,
+            },
+            minimum,
+            maximum,
+            padding,
+        ),
+        maximum,
     );
 }

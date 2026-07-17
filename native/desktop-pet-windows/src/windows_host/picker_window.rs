@@ -1,3 +1,10 @@
+mod theme;
+
+use self::theme::{
+    ACCENT, ACCENT_HOVER, ACCENT_SOFT, BORDER, BORDER_STRONG, CURRENT_SOFT, Color, SURFACE,
+    SURFACE_HOVER, SURFACE_MUTED, TEXT_DISABLED, TEXT_PRIMARY, TEXT_SECONDARY, WINDOW_BACKGROUND,
+    color_ref, create_ui_font, rounded_box,
+};
 use super::{
     PointI, last_error, log_event, open_pet_library, pet_preview_rgba, physical_px,
     reload_user_pet_library, set_launch_at_login_enabled, switch_pet, wide, window_rect,
@@ -9,26 +16,28 @@ use std::ptr::{null, null_mut};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use windows_sys::Win32::Foundation::{HINSTANCE, HWND, RECT};
 use windows_sys::Win32::Graphics::Gdi::{
-    BI_RGB, BITMAPINFO, BITMAPINFOHEADER, CreateSolidBrush, DEFAULT_GUI_FONT, DIB_RGB_COLORS,
-    DT_CENTER, DT_END_ELLIPSIS, DT_NOPREFIX, DT_SINGLELINE, DT_VCENTER, DeleteObject, DrawTextW,
-    FillRect, FrameRect, GetStockObject, InvalidateRect, SRCCOPY, SetBkMode, SetTextColor,
-    StretchDIBits, TRANSPARENT, WHITE_BRUSH,
+    BI_RGB, BITMAPINFO, BITMAPINFOHEADER, BeginPaint, CreatePen, CreateSolidBrush,
+    DEFAULT_GUI_FONT, DIB_RGB_COLORS, DT_CENTER, DT_END_ELLIPSIS, DT_LEFT, DT_NOPREFIX,
+    DT_SINGLELINE, DT_VCENTER, DeleteObject, DrawFocusRect, DrawTextW, Ellipse, EndPaint,
+    FW_NORMAL, FW_SEMIBOLD, FillRect, GetStockObject, HOLLOW_BRUSH, InvalidateRect, LineTo,
+    MoveToEx, PAINTSTRUCT, PS_SOLID, SRCCOPY, SelectObject, SetBkColor, SetBkMode, SetTextColor,
+    StretchDIBits, TRANSPARENT,
 };
 use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows_sys::Win32::UI::Controls::{
-    BST_CHECKED, BST_UNCHECKED, DRAWITEMSTRUCT, ODS_FOCUS, ODS_SELECTED,
+    DRAWITEMSTRUCT, EM_SETCUEBANNER, ODS_DISABLED, ODS_FOCUS, ODS_HOTLIGHT, ODS_SELECTED,
 };
 use windows_sys::Win32::UI::HiDpi::GetDpiForWindow;
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{EnableWindow, SetFocus};
 use windows_sys::Win32::UI::WindowsAndMessaging::{
-    BM_GETCHECK, BM_SETCHECK, BN_CLICKED, BS_AUTOCHECKBOX, BS_DEFPUSHBUTTON, BS_OWNERDRAW,
-    BS_PUSHBUTTON, CS_HREDRAW, CS_VREDRAW, CreateWindowExW, DefWindowProcW, DestroyWindow,
-    EN_CHANGE, ES_AUTOHSCROLL, GW_OWNER, GetClientRect, GetDlgItem, GetWindow,
-    GetWindowTextLengthW, GetWindowTextW, IDC_ARROW, IDCANCEL, IsDialogMessageW, LoadCursorW, MSG,
-    MoveWindow, RegisterClassW, SW_HIDE, SW_SHOW, SW_SHOWNORMAL, SWP_NOACTIVATE, SendMessageW,
-    SetForegroundWindow, SetWindowPos, SetWindowTextW, ShowWindow, WA_INACTIVE, WM_ACTIVATE,
-    WM_CLOSE, WM_COMMAND, WM_CREATE, WM_DESTROY, WM_DPICHANGED, WM_DRAWITEM, WM_SETFONT, WM_SIZE,
-    WNDCLASSW, WS_BORDER, WS_CAPTION, WS_CHILD, WS_DISABLED, WS_EX_CONTROLPARENT, WS_EX_TOOLWINDOW,
+    BN_CLICKED, BS_OWNERDRAW, CS_HREDRAW, CS_VREDRAW, CreateWindowExW, DefWindowProcW,
+    DestroyWindow, EN_CHANGE, ES_AUTOHSCROLL, GetClientRect, GetDlgCtrlID, GetDlgItem,
+    GetWindowTextLengthW, GetWindowTextW, HWND_NOTOPMOST, IDC_ARROW, IDCANCEL, IsDialogMessageW,
+    LoadCursorW, MSG, MoveWindow, RegisterClassW, SW_HIDE, SW_SHOW, SW_SHOWNORMAL, SWP_NOACTIVATE,
+    SWP_NOMOVE, SWP_NOSIZE, SendMessageW, SetForegroundWindow, SetWindowPos, SetWindowTextW,
+    ShowWindow, WA_INACTIVE, WM_ACTIVATE, WM_CLOSE, WM_COMMAND, WM_CREATE, WM_CTLCOLOREDIT,
+    WM_CTLCOLORSTATIC, WM_DESTROY, WM_DPICHANGED, WM_DRAWITEM, WM_ERASEBKGND, WM_PAINT, WM_SETFONT,
+    WM_SIZE, WNDCLASSW, WS_CAPTION, WS_CHILD, WS_DISABLED, WS_EX_CONTROLPARENT, WS_EX_TOOLWINDOW,
     WS_MINIMIZEBOX, WS_OVERLAPPED, WS_SYSMENU, WS_TABSTOP, WS_VISIBLE,
 };
 
@@ -50,6 +59,13 @@ const CONTROL_CARD_BASE: i32 = 200;
 const CARD_COUNT: usize = 8;
 
 static PICKER_HWND: AtomicUsize = AtomicUsize::new(0);
+static PICKER_OWNER_HWND: AtomicUsize = AtomicUsize::new(0);
+static BACKGROUND_BRUSH: AtomicUsize = AtomicUsize::new(0);
+static SURFACE_BRUSH: AtomicUsize = AtomicUsize::new(0);
+static FONT_TITLE: AtomicUsize = AtomicUsize::new(0);
+static FONT_BODY: AtomicUsize = AtomicUsize::new(0);
+static FONT_BODY_STRONG: AtomicUsize = AtomicUsize::new(0);
+static FONT_SMALL: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 struct PickerCard {
@@ -75,22 +91,38 @@ struct PickerSnapshot {
 
 pub(super) unsafe fn register(instance: HINSTANCE) -> Result<(), String> {
     let class_name = wide(CLASS_NAME);
+    let background_brush = CreateSolidBrush(color_ref(WINDOW_BACKGROUND));
+    let surface_brush = CreateSolidBrush(color_ref(SURFACE));
+    if background_brush.is_null() || surface_brush.is_null() {
+        if !background_brush.is_null() {
+            DeleteObject(background_brush);
+        }
+        if !surface_brush.is_null() {
+            DeleteObject(surface_brush);
+        }
+        return Err(last_error("CreateSolidBrush(picker)"));
+    }
     let window_class = WNDCLASSW {
         style: CS_HREDRAW | CS_VREDRAW,
         lpfnWndProc: Some(window_proc),
         hInstance: instance,
         hCursor: LoadCursorW(null_mut(), IDC_ARROW),
-        hbrBackground: GetStockObject(WHITE_BRUSH),
+        hbrBackground: background_brush,
         lpszClassName: class_name.as_ptr(),
         ..WNDCLASSW::default()
     };
     if RegisterClassW(&window_class) == 0 {
+        DeleteObject(background_brush);
+        DeleteObject(surface_brush);
         return Err(last_error("RegisterClassW(picker)"));
     }
+    BACKGROUND_BRUSH.store(background_brush as usize, Ordering::Release);
+    SURFACE_BRUSH.store(surface_brush as usize, Ordering::Release);
     Ok(())
 }
 
 pub(super) unsafe fn show(owner: HWND) {
+    PICKER_OWNER_HWND.store(owner as usize, Ordering::Release);
     let existing = PICKER_HWND.load(Ordering::Acquire) as HWND;
     if !existing.is_null() {
         refresh(existing);
@@ -122,8 +154,14 @@ pub(super) unsafe fn show(owner: HWND) {
     };
     let position = work_area_for(center)
         .map(|work_area| PointI {
-            x: (center.x - width / 2).clamp(work_area.left, work_area.right - width),
-            y: (center.y - height / 2).clamp(work_area.top, work_area.bottom - height),
+            x: (center.x - width / 2).clamp(
+                work_area.left,
+                (work_area.right - width).max(work_area.left),
+            ),
+            y: (center.y - height / 2).clamp(
+                work_area.top,
+                (work_area.bottom - height).max(work_area.top),
+            ),
         })
         .unwrap_or(PointI { x: 64, y: 64 });
     let class_name = wide(CLASS_NAME);
@@ -137,7 +175,7 @@ pub(super) unsafe fn show(owner: HWND) {
         position.y,
         width,
         height,
-        owner,
+        null_mut(),
         null_mut(),
         instance,
         null(),
@@ -172,7 +210,7 @@ unsafe extern "system" fn window_proc(
     match message {
         WM_ACTIVATE => {
             if low_word(wparam) != WA_INACTIVE as i32 {
-                let owner = GetWindow(hwnd, GW_OWNER);
+                let owner = PICKER_OWNER_HWND.load(Ordering::Acquire) as HWND;
                 if !owner.is_null()
                     && let Err(error) = reload_user_pet_library(owner)
                 {
@@ -184,10 +222,18 @@ unsafe extern "system" fn window_proc(
         }
         WM_CREATE => {
             create_controls(hwnd);
+            install_fonts(hwnd, GetDpiForWindow(hwnd).max(96));
             layout_controls(hwnd);
             refresh(hwnd);
             0
         }
+        WM_ERASEBKGND => 1,
+        WM_PAINT => {
+            paint_window(hwnd);
+            0
+        }
+        WM_CTLCOLOREDIT => paint_control_background(wparam, lparam, true),
+        WM_CTLCOLORSTATIC => paint_control_background(wparam, lparam, false),
         WM_SIZE => {
             layout_controls(hwnd);
             0
@@ -205,7 +251,9 @@ unsafe extern "system" fn window_proc(
                     SWP_NOACTIVATE,
                 );
             }
+            install_fonts(hwnd, GetDpiForWindow(hwnd).max(96));
             layout_controls(hwnd);
+            InvalidateRect(hwnd, null(), 1);
             0
         }
         WM_COMMAND => {
@@ -225,6 +273,8 @@ unsafe extern "system" fn window_proc(
         }
         WM_DESTROY => {
             PICKER_HWND.store(0, Ordering::Release);
+            PICKER_OWNER_HWND.store(0, Ordering::Release);
+            release_fonts();
             log_event("event=picker_closed");
             0
         }
@@ -239,21 +289,21 @@ unsafe fn create_controls(hwnd: HWND) {
         hwnd,
         "EDIT",
         "",
-        WS_VISIBLE | WS_TABSTOP | WS_BORDER | ES_AUTOHSCROLL as u32,
+        WS_VISIBLE | WS_TABSTOP | ES_AUTOHSCROLL as u32,
         CONTROL_SEARCH,
     );
     create_control(
         hwnd,
         "BUTTON",
         "开机自启",
-        WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX as u32,
+        WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW as u32,
         CONTROL_LAUNCH,
     );
     create_control(
         hwnd,
         "BUTTON",
         "管理宠物",
-        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON as u32,
+        WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW as u32,
         CONTROL_MANAGE,
     );
     for index in 0..CARD_COUNT {
@@ -269,7 +319,7 @@ unsafe fn create_controls(hwnd: HWND) {
         hwnd,
         "BUTTON",
         "←",
-        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON as u32,
+        WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW as u32,
         CONTROL_PREVIOUS,
     );
     create_control(hwnd, "STATIC", "0 / 0", WS_VISIBLE, CONTROL_PAGE);
@@ -277,7 +327,7 @@ unsafe fn create_controls(hwnd: HWND) {
         hwnd,
         "BUTTON",
         "→",
-        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON as u32,
+        WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW as u32,
         CONTROL_NEXT,
     );
     create_control(
@@ -292,9 +342,12 @@ unsafe fn create_controls(hwnd: HWND) {
         hwnd,
         "BUTTON",
         "确认使用",
-        WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON as u32,
+        WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW as u32,
         CONTROL_CONFIRM,
     );
+    let search = GetDlgItem(hwnd, CONTROL_SEARCH);
+    let cue = wide("搜索伙伴名称或 ID");
+    SendMessageW(search, EM_SETCUEBANNER, 1, cue.as_ptr() as isize);
 }
 
 unsafe fn create_control(hwnd: HWND, class: &str, text: &str, style: u32, id: i32) -> HWND {
@@ -326,6 +379,166 @@ unsafe fn create_control(hwnd: HWND, class: &str, text: &str, style: u32, id: i3
     control
 }
 
+unsafe fn install_fonts(hwnd: HWND, dpi: u32) {
+    replace_font(&FONT_TITLE, create_ui_font(dpi, 22, FW_SEMIBOLD));
+    replace_font(&FONT_BODY, create_ui_font(dpi, 14, FW_NORMAL));
+    replace_font(&FONT_BODY_STRONG, create_ui_font(dpi, 14, FW_SEMIBOLD));
+    replace_font(&FONT_SMALL, create_ui_font(dpi, 12, FW_NORMAL));
+
+    set_control_font(hwnd, CONTROL_TITLE, FONT_TITLE.load(Ordering::Acquire));
+    set_control_font(hwnd, CONTROL_TOTAL, FONT_SMALL.load(Ordering::Acquire));
+    set_control_font(hwnd, CONTROL_SEARCH, FONT_BODY.load(Ordering::Acquire));
+    set_control_font(
+        hwnd,
+        CONTROL_LAUNCH,
+        FONT_BODY_STRONG.load(Ordering::Acquire),
+    );
+    set_control_font(
+        hwnd,
+        CONTROL_MANAGE,
+        FONT_BODY_STRONG.load(Ordering::Acquire),
+    );
+    set_control_font(hwnd, CONTROL_PREVIOUS, FONT_BODY.load(Ordering::Acquire));
+    set_control_font(hwnd, CONTROL_PAGE, FONT_SMALL.load(Ordering::Acquire));
+    set_control_font(hwnd, CONTROL_NEXT, FONT_BODY.load(Ordering::Acquire));
+    set_control_font(hwnd, CONTROL_DETAIL, FONT_BODY.load(Ordering::Acquire));
+    set_control_font(
+        hwnd,
+        CONTROL_CONFIRM,
+        FONT_BODY_STRONG.load(Ordering::Acquire),
+    );
+    for index in 0..CARD_COUNT {
+        set_control_font(
+            hwnd,
+            CONTROL_CARD_BASE + index as i32,
+            FONT_BODY.load(Ordering::Acquire),
+        );
+    }
+}
+
+unsafe fn replace_font(target: &AtomicUsize, font: *mut c_void) {
+    if font.is_null() {
+        return;
+    }
+    let previous = target.swap(font as usize, Ordering::AcqRel) as *mut c_void;
+    if !previous.is_null() {
+        DeleteObject(previous);
+    }
+}
+
+unsafe fn set_control_font(hwnd: HWND, id: i32, font: usize) {
+    if font == 0 {
+        return;
+    }
+    let control = GetDlgItem(hwnd, id);
+    if !control.is_null() {
+        SendMessageW(control, WM_SETFONT, font, 1);
+    }
+}
+
+unsafe fn release_fonts() {
+    for font in [&FONT_TITLE, &FONT_BODY, &FONT_BODY_STRONG, &FONT_SMALL] {
+        let handle = font.swap(0, Ordering::AcqRel) as *mut c_void;
+        if !handle.is_null() {
+            DeleteObject(handle);
+        }
+    }
+}
+
+unsafe fn paint_window(hwnd: HWND) {
+    let mut paint = PAINTSTRUCT::default();
+    let device = BeginPaint(hwnd, &mut paint);
+    if device.is_null() {
+        return;
+    }
+    let mut client = RECT::default();
+    if GetClientRect(hwnd, &mut client) != 0 {
+        let background = BACKGROUND_BRUSH.load(Ordering::Acquire) as *mut c_void;
+        if !background.is_null() {
+            FillRect(device, &client, background);
+        }
+        let dpi = GetDpiForWindow(hwnd).max(96);
+        let scale = |value| physical_px(value, dpi);
+        let width = client.right - client.left;
+        let height = client.bottom - client.top;
+        let margin = scale(24);
+        let search_width = (width - margin * 2 - scale(340)).max(scale(260));
+        let search = RECT {
+            left: margin,
+            top: scale(50),
+            right: margin + search_width,
+            bottom: scale(90),
+        };
+        rounded_box(device, &search, SURFACE, BORDER, scale(12), scale(1));
+        draw_search_icon(device, &search, dpi);
+
+        let footer = RECT {
+            left: margin,
+            top: height - scale(98),
+            right: width - margin,
+            bottom: height - scale(14),
+        };
+        rounded_box(device, &footer, SURFACE, BORDER, scale(14), scale(1));
+    }
+    EndPaint(hwnd, &paint);
+}
+
+unsafe fn draw_search_icon(device: *mut c_void, bounds: &RECT, dpi: u32) {
+    let scale = |value| physical_px(value, dpi);
+    let pen = CreatePen(PS_SOLID, scale(2).max(1), color_ref(TEXT_SECONDARY));
+    if pen.is_null() {
+        return;
+    }
+    let previous_pen = SelectObject(device, pen);
+    let previous_brush = SelectObject(device, GetStockObject(HOLLOW_BRUSH));
+    let center_x = bounds.left + scale(20);
+    let center_y = bounds.top + (bounds.bottom - bounds.top) / 2 - scale(2);
+    let radius = scale(6);
+    Ellipse(
+        device,
+        center_x - radius,
+        center_y - radius,
+        center_x + radius,
+        center_y + radius,
+    );
+    MoveToEx(device, center_x + scale(4), center_y + scale(4), null_mut());
+    LineTo(device, center_x + scale(9), center_y + scale(9));
+    SelectObject(device, previous_brush);
+    SelectObject(device, previous_pen);
+    DeleteObject(pen);
+}
+
+unsafe fn paint_control_background(wparam: usize, lparam: isize, edit: bool) -> isize {
+    let device = wparam as *mut c_void;
+    let control = lparam as HWND;
+    let id = if control.is_null() {
+        0
+    } else {
+        GetDlgCtrlID(control)
+    };
+    let on_surface = edit || id == CONTROL_DETAIL;
+    let background = if on_surface {
+        SURFACE
+    } else {
+        WINDOW_BACKGROUND
+    };
+    SetBkMode(device, TRANSPARENT as i32);
+    SetBkColor(device, color_ref(background));
+    SetTextColor(
+        device,
+        color_ref(if id == CONTROL_TOTAL || id == CONTROL_PAGE {
+            TEXT_SECONDARY
+        } else {
+            TEXT_PRIMARY
+        }),
+    );
+    if on_surface {
+        SURFACE_BRUSH.load(Ordering::Acquire) as isize
+    } else {
+        BACKGROUND_BRUSH.load(Ordering::Acquire) as isize
+    }
+}
+
 unsafe fn layout_controls(hwnd: HWND) {
     let mut client = RECT::default();
     if GetClientRect(hwnd, &mut client) == 0 {
@@ -337,8 +550,8 @@ unsafe fn layout_controls(hwnd: HWND) {
     let height = client.bottom - client.top;
     let margin = scale(24);
     let gap = scale(12);
-    let header_height = scale(82);
-    let footer_height = scale(128);
+    let header_height = scale(90);
+    let footer_height = scale(150);
     let grid_top = margin + header_height;
     let grid_bottom = (height - footer_height).max(grid_top + scale(120));
     let grid_width = (width - margin * 2).max(scale(400));
@@ -349,25 +562,26 @@ unsafe fn layout_controls(hwnd: HWND) {
         hwnd,
         CONTROL_TITLE,
         margin,
-        scale(14),
+        scale(16),
         scale(360),
-        scale(28),
+        scale(30),
     );
     move_control(
         hwnd,
         CONTROL_TOTAL,
         width - margin - scale(180),
-        scale(16),
+        scale(20),
         scale(180),
         scale(24),
     );
+    let search_shell_width = (width - margin * 2 - scale(340)).max(scale(260));
     move_control(
         hwnd,
         CONTROL_SEARCH,
-        margin,
-        scale(50),
-        (width - margin * 2 - scale(340)).max(scale(260)),
-        scale(34),
+        margin + scale(40),
+        scale(54),
+        search_shell_width - scale(50),
+        scale(32),
     );
     move_control(
         hwnd,
@@ -375,7 +589,7 @@ unsafe fn layout_controls(hwnd: HWND) {
         width - margin - scale(322),
         scale(50),
         scale(142),
-        scale(34),
+        scale(40),
     );
     move_control(
         hwnd,
@@ -383,7 +597,7 @@ unsafe fn layout_controls(hwnd: HWND) {
         width - margin - scale(164),
         scale(50),
         scale(164),
-        scale(34),
+        scale(40),
     );
     for index in 0..CARD_COUNT {
         let column = index % 4;
@@ -426,27 +640,28 @@ unsafe fn layout_controls(hwnd: HWND) {
     move_control(
         hwnd,
         CONTROL_DETAIL_PREVIEW,
-        margin,
-        height - scale(80),
+        margin + scale(12),
+        height - scale(86),
         scale(64),
         scale(64),
     );
     move_control(
         hwnd,
         CONTROL_DETAIL,
-        margin + scale(80),
-        height - scale(66),
-        (width - margin * 2 - scale(270)).max(scale(220)),
+        margin + scale(92),
+        height - scale(72),
+        (width - margin * 2 - scale(296)).max(scale(220)),
         scale(52),
     );
     move_control(
         hwnd,
         CONTROL_CONFIRM,
-        width - margin - scale(170),
-        height - scale(68),
-        scale(170),
-        scale(44),
+        width - margin - scale(178),
+        height - scale(75),
+        scale(166),
+        scale(46),
     );
+    InvalidateRect(hwnd, null(), 1);
 }
 
 unsafe fn move_control(hwnd: HWND, id: i32, x: i32, y: i32, width: i32, height: i32) {
@@ -497,23 +712,40 @@ unsafe fn handle_command(hwnd: HWND, control_id: i32, notification: u16) {
             .ok()
             .flatten();
             if let Some(runtime_id) = candidate {
-                let owner = GetWindow(hwnd, GW_OWNER);
+                let owner = PICKER_OWNER_HWND.load(Ordering::Acquire) as HWND;
                 if !owner.is_null() {
-                    switch_pet(owner, &runtime_id);
+                    match switch_pet(owner, &runtime_id) {
+                        Ok(_) => {
+                            DestroyWindow(hwnd);
+                            return;
+                        }
+                        Err(error) => log_event(&format!(
+                            "event=pet_switch_error id={runtime_id} error={error}",
+                        )),
+                    }
                 }
             }
             refresh(hwnd);
         }
         CONTROL_LAUNCH => {
-            let checkbox = GetDlgItem(hwnd, CONTROL_LAUNCH);
-            let enabled = SendMessageW(checkbox, BM_GETCHECK, 0, 0) == BST_CHECKED as isize;
+            let enabled = !snapshot().launch_at_login;
             if let Err(error) = set_launch_at_login_enabled(enabled) {
                 log_event(&format!("event=launch_at_login_error error={error}"));
             }
             refresh(hwnd);
         }
         CONTROL_MANAGE => {
-            if let Err(error) = open_pet_library() {
+            SetWindowPos(
+                hwnd,
+                HWND_NOTOPMOST,
+                0,
+                0,
+                0,
+                0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
+            );
+            SetForegroundWindow(hwnd);
+            if let Err(error) = open_pet_library(hwnd) {
                 log_event(&format!("event=pet_library_open_error error={error}"));
             }
         }
@@ -536,6 +768,17 @@ unsafe fn handle_command(hwnd: HWND, control_id: i32, notification: u16) {
 unsafe fn draw_item(item: &DRAWITEMSTRUCT) -> bool {
     let control_id = item.CtlID as i32;
     let snapshot = snapshot();
+    if control_id == CONTROL_LAUNCH {
+        draw_launch_toggle(item, snapshot.launch_at_login);
+        return true;
+    }
+    if matches!(
+        control_id,
+        CONTROL_MANAGE | CONTROL_PREVIOUS | CONTROL_NEXT | CONTROL_CONFIRM
+    ) {
+        draw_action_button(item, control_id, &snapshot);
+        return true;
+    }
     if control_id == CONTROL_DETAIL_PREVIEW {
         draw_preview_panel(item, snapshot.draft.as_ref());
         return true;
@@ -550,111 +793,273 @@ unsafe fn draw_item(item: &DRAWITEMSTRUCT) -> bool {
     true
 }
 
-unsafe fn draw_card(item: &DRAWITEMSTRUCT, card: &PickerCard) {
+unsafe fn draw_action_button(item: &DRAWITEMSTRUCT, control_id: i32, snapshot: &PickerSnapshot) {
+    let dpi = GetDpiForWindow(item.hwndItem).max(96);
+    let scale = |value| physical_px(value, dpi);
     let pressed = item.itemState & ODS_SELECTED != 0;
-    let background = if pressed {
-        (238, 238, 238)
-    } else if card.draft {
-        (244, 251, 249)
+    let hot = item.itemState & ODS_HOTLIGHT != 0;
+    let disabled = item.itemState & ODS_DISABLED != 0;
+    let primary = control_id == CONTROL_CONFIRM;
+    let (fill, border, text_color) = if disabled {
+        (SURFACE_MUTED, BORDER, TEXT_DISABLED)
+    } else if primary {
+        (
+            if pressed || hot { ACCENT_HOVER } else { ACCENT },
+            if pressed || hot { ACCENT_HOVER } else { ACCENT },
+            (255, 255, 255),
+        )
     } else {
-        (255, 255, 255)
+        (
+            if pressed {
+                SURFACE_MUTED
+            } else if hot {
+                SURFACE_HOVER
+            } else {
+                SURFACE
+            },
+            if hot { BORDER_STRONG } else { BORDER },
+            TEXT_PRIMARY,
+        )
     };
-    fill_rect(item.hDC, &item.rcItem, background);
-    frame_rect(
+    rounded_box(
         item.hDC,
         &item.rcItem,
-        if card.draft {
-            (16, 163, 127)
-        } else if card.confirmed {
-            (112, 112, 112)
+        fill,
+        border,
+        scale(if primary { 12 } else { 10 }),
+        scale(1),
+    );
+    let label = match control_id {
+        CONTROL_MANAGE => "管理宠物",
+        CONTROL_PREVIOUS => "‹",
+        CONTROL_NEXT => "›",
+        CONTROL_CONFIRM if snapshot.confirmation_candidate.is_some() => "确认使用",
+        CONTROL_CONFIRM => "正在使用",
+        _ => "",
+    };
+    let mut text_bounds = item.rcItem;
+    draw_text_with_font(
+        item.hDC,
+        label,
+        &mut text_bounds,
+        text_color,
+        DT_CENTER | DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX,
+        if primary || control_id == CONTROL_MANAGE {
+            FONT_BODY_STRONG.load(Ordering::Acquire)
         } else {
-            (229, 229, 229)
+            FONT_BODY.load(Ordering::Acquire)
         },
     );
+    if item.itemState & ODS_FOCUS != 0 {
+        let focus = inset_rect(item.rcItem, scale(4));
+        DrawFocusRect(item.hDC, &focus);
+    }
+}
 
-    let status = if card.confirmed {
-        "桌面中"
-    } else if card.draft {
-        "已预览"
-    } else {
-        ""
+unsafe fn draw_launch_toggle(item: &DRAWITEMSTRUCT, enabled: bool) {
+    let dpi = GetDpiForWindow(item.hwndItem).max(96);
+    let scale = |value| physical_px(value, dpi);
+    let hot = item.itemState & ODS_HOTLIGHT != 0;
+    let pressed = item.itemState & ODS_SELECTED != 0;
+    rounded_box(
+        item.hDC,
+        &item.rcItem,
+        if hot || pressed {
+            SURFACE_HOVER
+        } else {
+            SURFACE
+        },
+        if hot { BORDER_STRONG } else { BORDER },
+        scale(10),
+        scale(1),
+    );
+    let track_width = scale(38);
+    let track_height = scale(20);
+    let track = RECT {
+        left: item.rcItem.right - track_width - scale(10),
+        top: item.rcItem.top + (item.rcItem.bottom - item.rcItem.top - track_height) / 2,
+        right: item.rcItem.right - scale(10),
+        bottom: item.rcItem.top
+            + (item.rcItem.bottom - item.rcItem.top - track_height) / 2
+            + track_height,
     };
-    if !status.is_empty() {
-        let mut status_bounds = RECT {
-            left: item.rcItem.left + 8,
-            top: item.rcItem.top + 5,
-            right: item.rcItem.right - 8,
-            bottom: item.rcItem.top + 24,
+    rounded_box(
+        item.hDC,
+        &track,
+        if enabled { ACCENT } else { SURFACE_MUTED },
+        if enabled { ACCENT } else { BORDER_STRONG },
+        track_height,
+        scale(1),
+    );
+    let thumb_size = scale(14);
+    let thumb_left = if enabled {
+        track.right - scale(3) - thumb_size
+    } else {
+        track.left + scale(3)
+    };
+    let thumb_top = track.top + (track_height - thumb_size) / 2;
+    let thumb = RECT {
+        left: thumb_left,
+        top: thumb_top,
+        right: thumb_left + thumb_size,
+        bottom: thumb_top + thumb_size,
+    };
+    rounded_box(
+        item.hDC,
+        &thumb,
+        (255, 255, 255),
+        (255, 255, 255),
+        thumb_size,
+        scale(1),
+    );
+    let mut label_bounds = RECT {
+        left: item.rcItem.left + scale(12),
+        top: item.rcItem.top,
+        right: track.left - scale(8),
+        bottom: item.rcItem.bottom,
+    };
+    draw_text_with_font(
+        item.hDC,
+        "开机自启",
+        &mut label_bounds,
+        TEXT_PRIMARY,
+        DT_LEFT | DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX,
+        FONT_BODY.load(Ordering::Acquire),
+    );
+    if item.itemState & ODS_FOCUS != 0 {
+        let focus = inset_rect(item.rcItem, scale(4));
+        DrawFocusRect(item.hDC, &focus);
+    }
+}
+
+unsafe fn draw_card(item: &DRAWITEMSTRUCT, card: &PickerCard) {
+    let dpi = GetDpiForWindow(item.hwndItem).max(96);
+    let scale = |value| physical_px(value, dpi);
+    let pressed = item.itemState & ODS_SELECTED != 0;
+    let hot = item.itemState & ODS_HOTLIGHT != 0;
+    let background = if pressed {
+        SURFACE_MUTED
+    } else if card.draft {
+        ACCENT_SOFT
+    } else if hot {
+        SURFACE_HOVER
+    } else {
+        SURFACE
+    };
+    let border = if card.draft {
+        ACCENT
+    } else if card.confirmed || hot {
+        BORDER_STRONG
+    } else {
+        BORDER
+    };
+    rounded_box(
+        item.hDC,
+        &item.rcItem,
+        background,
+        border,
+        scale(14),
+        scale(if card.draft { 2 } else { 1 }),
+    );
+
+    if card.confirmed || card.draft {
+        let status = if card.draft { "待确认" } else { "桌面中" };
+        let status_width = scale(62);
+        let status_bounds = RECT {
+            left: item.rcItem.left + scale(10),
+            top: item.rcItem.top + scale(9),
+            right: item.rcItem.left + scale(10) + status_width,
+            bottom: item.rcItem.top + scale(31),
         };
-        draw_text(
+        rounded_box(
+            item.hDC,
+            &status_bounds,
+            if card.draft { ACCENT } else { CURRENT_SOFT },
+            if card.draft { ACCENT } else { BORDER },
+            scale(11),
+            scale(1),
+        );
+        let mut status_bounds = RECT {
+            left: status_bounds.left + scale(4),
+            top: status_bounds.top,
+            right: status_bounds.right - scale(4),
+            bottom: status_bounds.bottom,
+        };
+        draw_text_with_font(
             item.hDC,
             status,
             &mut status_bounds,
             if card.draft {
-                (10, 122, 94)
+                (255, 255, 255)
             } else {
-                (80, 80, 80)
+                TEXT_SECONDARY
             },
             DT_CENTER | DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX,
+            FONT_SMALL.load(Ordering::Acquire),
         );
     }
 
     let preview_bounds = RECT {
-        left: item.rcItem.left + 10,
-        top: item.rcItem.top + 23,
-        right: item.rcItem.right - 10,
-        bottom: item.rcItem.bottom - 50,
+        left: item.rcItem.left + scale(12),
+        top: item.rcItem.top + scale(36),
+        right: item.rcItem.right - scale(12),
+        bottom: item.rcItem.bottom - scale(56),
     };
     draw_pet_preview(item.hDC, &preview_bounds, &card.runtime_id, background);
 
     let mut name_bounds = RECT {
-        left: item.rcItem.left + 8,
-        top: item.rcItem.bottom - 48,
-        right: item.rcItem.right - 8,
-        bottom: item.rcItem.bottom - 26,
+        left: item.rcItem.left + scale(10),
+        top: item.rcItem.bottom - scale(54),
+        right: item.rcItem.right - scale(10),
+        bottom: item.rcItem.bottom - scale(29),
     };
-    draw_text(
+    draw_text_with_font(
         item.hDC,
         &card.display_name,
         &mut name_bounds,
-        (32, 32, 32),
+        TEXT_PRIMARY,
         DT_CENTER | DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX,
+        FONT_BODY_STRONG.load(Ordering::Acquire),
     );
     let mut caption_bounds = RECT {
-        left: item.rcItem.left + 8,
-        top: item.rcItem.bottom - 27,
-        right: item.rcItem.right - 8,
-        bottom: item.rcItem.bottom - 6,
+        left: item.rcItem.left + scale(10),
+        top: item.rcItem.bottom - scale(30),
+        right: item.rcItem.right - scale(10),
+        bottom: item.rcItem.bottom - scale(8),
     };
-    draw_text(
+    draw_text_with_font(
         item.hDC,
         &card.caption,
         &mut caption_bounds,
-        (105, 105, 105),
+        TEXT_SECONDARY,
         DT_CENTER | DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX,
+        FONT_SMALL.load(Ordering::Acquire),
     );
     if item.itemState & ODS_FOCUS != 0 {
-        let focus = RECT {
-            left: item.rcItem.left + 3,
-            top: item.rcItem.top + 3,
-            right: item.rcItem.right - 3,
-            bottom: item.rcItem.bottom - 3,
-        };
-        frame_rect(item.hDC, &focus, (32, 32, 32));
+        let focus = inset_rect(item.rcItem, scale(4));
+        DrawFocusRect(item.hDC, &focus);
     }
 }
 
 unsafe fn draw_preview_panel(item: &DRAWITEMSTRUCT, card: Option<&PickerCard>) {
-    fill_rect(item.hDC, &item.rcItem, (247, 247, 248));
-    frame_rect(item.hDC, &item.rcItem, (229, 229, 229));
+    let dpi = GetDpiForWindow(item.hwndItem).max(96);
+    let scale = |value| physical_px(value, dpi);
+    rounded_box(
+        item.hDC,
+        &item.rcItem,
+        SURFACE_MUTED,
+        BORDER,
+        scale(12),
+        scale(1),
+    );
     let bounds = RECT {
-        left: item.rcItem.left + 4,
-        top: item.rcItem.top + 4,
-        right: item.rcItem.right - 4,
-        bottom: item.rcItem.bottom - 4,
+        left: item.rcItem.left + scale(5),
+        top: item.rcItem.top + scale(5),
+        right: item.rcItem.right - scale(5),
+        bottom: item.rcItem.bottom - scale(5),
     };
     if let Some(card) = card {
-        draw_pet_preview(item.hDC, &bounds, &card.runtime_id, (247, 247, 248));
+        draw_pet_preview(item.hDC, &bounds, &card.runtime_id, SURFACE_MUTED);
     }
 }
 
@@ -666,12 +1071,13 @@ unsafe fn draw_pet_preview(
 ) {
     let Ok(preview) = pet_preview_rgba(runtime_id) else {
         let mut placeholder = *bounds;
-        draw_text(
+        draw_text_with_font(
             device,
             "?",
             &mut placeholder,
-            (128, 128, 128),
+            TEXT_SECONDARY,
             DT_CENTER | DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX,
+            FONT_BODY_STRONG.load(Ordering::Acquire),
         );
         return;
     };
@@ -739,37 +1145,35 @@ fn composited_bgra(preview: &desktop_pet_render::RgbaImage, background: (u8, u8,
     pixels
 }
 
-unsafe fn fill_rect(device: *mut c_void, bounds: &RECT, color: (u8, u8, u8)) {
-    let brush = CreateSolidBrush(color_ref(color));
-    if !brush.is_null() {
-        FillRect(device, bounds, brush);
-        DeleteObject(brush);
-    }
-}
-
-unsafe fn frame_rect(device: *mut c_void, bounds: &RECT, color: (u8, u8, u8)) {
-    let brush = CreateSolidBrush(color_ref(color));
-    if !brush.is_null() {
-        FrameRect(device, bounds, brush);
-        DeleteObject(brush);
-    }
-}
-
-unsafe fn draw_text(
+unsafe fn draw_text_with_font(
     device: *mut c_void,
     text: &str,
     bounds: &mut RECT,
-    color: (u8, u8, u8),
+    color: Color,
     format: u32,
+    font: usize,
 ) {
+    let previous = if font == 0 {
+        null_mut()
+    } else {
+        SelectObject(device, font as *mut c_void)
+    };
     SetBkMode(device, TRANSPARENT as i32);
     SetTextColor(device, color_ref(color));
     let text = wide(text);
     DrawTextW(device, text.as_ptr(), -1, bounds, format);
+    if !previous.is_null() {
+        SelectObject(device, previous);
+    }
 }
 
-fn color_ref((red, green, blue): (u8, u8, u8)) -> u32 {
-    u32::from(red) | (u32::from(green) << 8) | (u32::from(blue) << 16)
+fn inset_rect(bounds: RECT, amount: i32) -> RECT {
+    RECT {
+        left: bounds.left + amount,
+        top: bounds.top + amount,
+        right: bounds.right - amount,
+        bottom: bounds.bottom - amount,
+    }
 }
 
 unsafe fn refresh(hwnd: HWND) {
@@ -833,16 +1237,7 @@ unsafe fn refresh(hwnd: HWND) {
         confirm,
         i32::from(snapshot.confirmation_candidate.is_some()),
     );
-    SendMessageW(
-        GetDlgItem(hwnd, CONTROL_LAUNCH),
-        BM_SETCHECK,
-        if snapshot.launch_at_login {
-            BST_CHECKED as usize
-        } else {
-            BST_UNCHECKED as usize
-        },
-        0,
-    );
+    InvalidateRect(GetDlgItem(hwnd, CONTROL_LAUNCH), null(), 1);
 }
 
 fn snapshot() -> PickerSnapshot {

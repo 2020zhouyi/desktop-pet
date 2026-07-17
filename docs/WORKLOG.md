@@ -8,6 +8,18 @@
 - Electron 发布闭环仍是 `npm run release:gate` -> `docs/release-smoke.md`；原生 Windows 使用 Rust workspace 门禁、`native/scripts/package-windows.ps1`、隔离运行证据脚本和 `docs/windows-native-migration.md`。
 - 当前发布版本以 `package.json` 的 `0.1.3` 为唯一来源。
 
+## 2026-07-18
+
+### Windows 原生交互与视觉修正（代码完成，Windows 视觉复验待执行）
+
+- `PickerWindow` 保留轻量 Win32/GDI 架构，但正文区改为统一的暖白、墨色与玉绿色语义主题；宠物卡、主次按钮、自启开关、搜索框和底部确认坞均改为高 DPI 自绘，不再直接暴露默认 Windows 按钮与复选框外观。
+- 选择器仍使用原生 `EDIT` 承担键盘、中文输入法和无障碍输入，外层搜索框、图标、圆角与字体由宿主绘制，避免为视觉一致性引入 WebView2。
+- “确认使用”只有在图集解码和选择持久化成功后才关闭选择器；失败会保留窗口并写入日志，避免无声关闭。选择器不再挂到始终置顶的桌宠 owner 链上；“管理宠物”会先把选择器降为非置顶，再用其 HWND 打开资源管理器，避免目录窗口被挡住。
+- 缩放把手从透明 atlas 画布右下角改为锚定所有动画帧的 alpha 可见外接区域，热区增大为 28px，并加入离开轮询、透明间隙宽限区和 NW-SE 光标；鼠标从角色移动到把手时不会因短暂离开 alpha 区域而立刻失效。
+- 气泡不再固定为 300×96px；宿主使用 Segoe UI 实测当前文案，短句收缩到最低 120×44px，长句在 240×92px 内换行，并在 Per-Monitor DPI 变化时重新计算。
+- 共享几何与渲染契约新增 alpha 外接区域、可见区域缩放锚点和紧凑气泡尺寸测试；当前 Rust workspace 共 41 个集成契约测试通过，Windows x64 `cargo xwin check` 零告警通过。真实 Windows 上的视觉、窗口层级与鼠标路径仍须按迁移清单复验，不能由 macOS 交叉编译替代。
+- 2026-07-18 dirty-worktree macOS `cargo-xwin` 候选已生成：x86-64 GUI EXE 1,498,624 字节，完整 25 宠物 ZIP 61,957,695 字节，ZIP SHA256 为 `33c09d863b0c877704aae9a1d9b63e065ba48a15b789032da6f1d390c9188d21`；ZIP 完整性、25/25 资源、PE 架构、静态 CRT 导入和 20/65/90 MiB 预算均通过。该包只用于本轮早期核对，正式 artifact 仍须由 Windows workflow 从 clean commit 重建。
+
 ## 2026-07-16
 
 ### Windows 原生完整候选（代码与 ARM64 早期验收收口）

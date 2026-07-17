@@ -142,4 +142,7 @@ npm run dev
 - `runtime-evidence.json` 和 `%LOCALAPPDATA%\DesktopPet\desktop-pet.log`；
 - Windows 架构、版本、缩放、显示器布局及手工结果；
 - 登录启动后的 `source=autostart`、`window_visible` 和可拖动结果；
+- 鼠标从角色 alpha 区移动到右下方缩放把手的连续录像或逐步结果，确认图标不消失且光标、按下、缩放都可用；
+- 自绘 picker 在 100%、150%、200% DPI 下的截图，并记录确认成功后自动关闭、管理目录位于 picker 上方；
+- 短句与长句各一张气泡截图，确认动态紧凑尺寸和换行；
 - 真实 Windows x64 复核与 Electron ZIP 回滚演练。
