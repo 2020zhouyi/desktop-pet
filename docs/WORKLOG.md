@@ -2,13 +2,22 @@
 
 ## 当前收口状态
 
-- 当前公开发布主线仍是精简后的 Electron 双窗口；Windows Rust/Win32 完整候选已经实现，并完成 ARM64 来宾中的 x64 单屏早期验收，但登录自启复测、混合 DPI/多屏、真实 x64 和发布资产切换仍待发布前完成，因此保留 Electron Windows ZIP 作为回滚真相。
+- 当前公开版本为 `v0.1.4`：macOS 继续发布精简 Electron DMG，Windows 已切换为 Rust/Win32 x64 便携 ZIP；上一版 `v0.1.3` Electron Windows ZIP 保留为回滚真相。
+- Windows 原生版已完成 ARM64 来宾中的 x64 单屏早期验收和 clean-commit CI 门禁；登录自启复测、混合 DPI/多屏与真实 x64 仍未补齐，本次按发布决定跳过这些剩余 VM 项并公开下载。
 - 两条实现都保持透明 `PetWindow`、picker-only 控制窗、四态直接交互、四类气泡、25 个离线宠物和同一三字段设置契约。
 - 运行时只读统一用户宠物目录：Electron 使用 `userData/pets/`，原生 Windows 使用 `%LOCALAPPDATA%/DesktopPet/pets/`；发布种子只消费一次。
 - Electron 发布闭环仍是 `npm run release:gate` -> `docs/release-smoke.md`；原生 Windows 使用 Rust workspace 门禁、`native/scripts/package-windows.ps1`、隔离运行证据脚本和 `docs/windows-native-migration.md`。
 - 当前发布版本以 `package.json` 的 `0.1.4` 为唯一来源。
 
 ## 2026-07-18
+
+### v0.1.4 公开发布与站点切换
+
+- `446aeef` 从 clean worktree 触发 Windows workflow，格式、41 个 Rust 契约测试、Clippy `-D warnings`、production build、包结构、版本、提交 SHA、静态 CRT 与体积门禁全部通过。
+- Windows Release 只上传内层应用包 `Desktop.Pet.MVP-0.1.4-win-x64.zip`，不包含 artifact JSON 或验证脚本；ZIP 为 61,982,730 字节，SHA256 为 `2d4022eeaf65872cc6e08d6348c3f564e03aef5f840cc5b5f01796a86095a95f`。
+- macOS Release 上传 `Desktop.Pet.MVP-0.1.4-mac-arm64.dmg`，DMG 镜像校验与只读挂载通过；文件为 159,534,896 字节，SHA256 为 `d03b3f0d5fe8203394ba0f200dbb520b1c2bb7941585626a6bbbd2e681403ef5`，仍未签名和公证。
+- GitHub Release `v0.1.4` 的两个直接下载链接均返回 `200` 且远端 digest 匹配；`desktop-pet-site` 的 `9872527` 已部署到 Pages，线上脚本只指向这两个 `v0.1.4` 文件。
+- 剩余 Windows VM/实机项按本轮发布决定跳过；若出现无法启动、自启后不可拖动、透明命中或 DPI/多屏回归，立即把站点 Windows 下载恢复到 `v0.1.3` Electron ZIP。
 
 ### Windows 原生交互与视觉修正（代码完成，Windows 视觉复验待执行）
 

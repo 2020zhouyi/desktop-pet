@@ -2,7 +2,7 @@
 
 本清单验证当前 Desktop Pet MVP 的 picker-only 双窗口、选宠持久化、内置资源和打包产物。自动 smoke 是发布前硬门禁；人工 smoke 补充透明窗口、原生交互和平台外观检查。
 
-本页主体仍是 Electron/macOS 与当前公开发布门禁。Windows Rust/Win32 候选必须额外完成 [windows-native-migration.md](windows-native-migration.md)；在该清单全部有证据前，不得用原生 ZIP 覆盖公开 Electron Windows 资产。
+本页主体仍是 Electron/macOS 发布门禁。Windows `v0.1.4` 已按发布决定切换为 Rust/Win32 便携 ZIP，并保留 `v0.1.3` Electron Windows ZIP 作为回滚；后续原生 Windows 发布仍须结合 [windows-native-migration.md](windows-native-migration.md) 补齐登录自启、混合 DPI/多屏与真实 x64 证据。
 
 ## Before Smoke
 
